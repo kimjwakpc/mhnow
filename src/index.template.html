@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>몬헌 나우 장비 세팅</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+
+<header class="top"><div class="top-in">
+  <div class="brand">몬헌 나우 <span>장비 세팅</span></div>
+  <span id="verify"></span>
+  <nav class="tabs">
+    <button data-tab="set" class="on">장비 세팅</button>
+    <button data-tab="cmp">세팅 비교</button>
+    <button data-tab="dex">도감</button>
+    <button data-tab="map">스킬 매핑</button>
+  </nav>
+</div></header>
+
+<main>
+
+<!-- ══════════ 장비 세팅 ══════════ -->
+<section id="pg-set"><div class="layout">
+
+  <div>
+    <div class="card">
+      <h3>무기 <span class="sub" id="w-sub"></span></h3>
+      <div class="body">
+        <div class="gearrow">
+          <button class="slot empty" id="slot-w">
+            <span class="ico"><span class="ph">무기</span></span>
+            <span class="tx"><b>무기를 선택하세요</b><em>종류 · 세트 · 속성 · 스킬로 찾기</em></span>
+            <span class="rt"></span>
+          </button>
+          <div class="gearsub" id="w-sub-ctl"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hide" id="card-spec">
+      <h3><span id="spec-label">무기 고유 정보</span></h3>
+      <div class="body" id="spec-box"></div>
+    </div>
+
+    <div class="card" id="card-style">
+      <h3>스타일 강화 <span class="sub" id="style-src"></span></h3>
+      <div class="body"><div class="stylebox" id="stylebox"></div></div>
+    </div>
+
+    <div class="card">
+      <h3>방어구 <span class="sub" id="armor-sub"></span>
+        <button class="btn sm" id="btn-bulk-armor" style="margin-left:8px">일괄 선택</button>
+        <button class="btn sm" id="btn-bulk-stone">표류석 일괄</button>
+      </h3>
+      <div class="body" id="armor-box"></div>
+    </div>
+
+    <div class="card">
+      <h3>집계 스킬 <span class="sub" id="skill-count"></span></h3>
+      <div class="body">
+        <div id="skill-bulk" class="trigbar" style="display:none">
+          <span class="note">조건부 스킬 일괄 <b id="skill-bulk-n"></b></span>
+          <div class="trig">
+            <button data-bulktrig="on">전부 발동</button>
+            <button data-bulktrig="">전부 평균</button>
+            <button data-bulktrig="off">전부 미발동</button>
+          </div>
+        </div>
+        <div id="skill-over"></div>
+        <div id="skill-list"></div>
+        <p class="note" style="margin:12px 0 0">
+          발동률 = 그 스킬이 실제로 얼마나 먹히는지. 1 = 항상 발동, 0 = 이 무기로는 발동 불가.
+          추가 공격【폭파】처럼 <b>여러 번 쌓이는 스킬</b>은 한 전투에서 터지는 횟수를 넣습니다(예: 4).
+          무기를 고르면 그 무기 종류 기준값이 자동으로 들어가며, 여기서 숫자를 고치면 이번 세팅에만 적용됩니다.
+          늘 쓰는 값으로 굳히려면 <b>스킬 매핑</b> 탭에서 고치세요 — 거기서 고친 값은 저장되고 수정본 내보내기에도 담깁니다.<br>
+          조건부 스킬(용맹·추격·연격 등)은 <b>발동 / 평균 / 미발동</b> 버튼으로 발동률을 1 · 기준값 · 0 으로 바로 바꿔
+          최대치·평균·최소치 딜을 비교할 수 있습니다. 어떤 스킬에 이 버튼을 달지는 <b>스킬 매핑</b> 탭의 「조건부」 칸에서 정합니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>계산 과정 <span class="sub">모든 숫자를 그대로 보여줍니다</span></h3>
+      <div class="body" id="calc-box"></div>
+    </div>
+  </div>
+
+  <!-- 우측 결과 -->
+  <div class="sticky">
+    <div class="card res">
+      <h3>딜</h3>
+      <div class="body">
+        <div class="reslabel">기댓값 공격력</div>
+        <div class="big" id="res-final">—</div>
+        <div class="divide"></div>
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:0 0 96px"><label class="f">모션값 %</label><input type="number" id="motion" class="sm" placeholder="120"></div>
+          <div style="flex:1"><div class="reslabel">모션 적용 딜</div><div class="big sub2" id="res-motion">—</div></div>
+        </div>
+        <div class="divide"></div>
+        <div id="res-kv"></div>
+        <details style="margin-top:6px"><summary>계산 상세</summary><div id="res-detail"></div></details>
+        <div class="btnrow" style="margin-top:14px">
+          <button class="btn p" id="btn-save">세팅 저장</button>
+          <button class="btn sm" id="btn-share">링크</button>
+          <button class="btn sm" id="btn-export">내보내기</button>
+          <button class="btn sm" id="btn-import">불러오기</button>
+          <button class="btn sm dg" id="btn-reset">초기화</button>
+          <input type="file" id="file-import" accept="application/json" class="hide">
+        </div>
+        <div id="store-status" class="note" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+</div></section>
+
+<!-- ══════════ 비교 ══════════ -->
+<section id="pg-cmp" class="hide">
+  <div class="card"><h3>세팅 비교 <span class="sub">기댓값 공격력 내림차순</span></h3>
+    <div class="body" id="cmp-box"></div></div>
+</section>
+
+<!-- ══════════ 도감 ══════════ -->
+<section id="pg-dex" class="hide">
+  <div class="card">
+    <h3>도감 <span class="sub" id="dx-count"></span></h3>
+    <div class="body">
+      <div class="row" style="margin-bottom:12px">
+        <div style="flex:0 0 130px"><select id="dx-kind"><option value="w">무기</option><option value="a">방어구</option></select></div>
+        <div style="flex:0 0 170px"><select id="dx-cat"></select></div>
+        <div style="flex:0 0 170px"><select id="dx-elem"></select></div>
+        <div style="flex:0 0 170px"><select id="dx-sort"><option value="">기본 정렬</option><option value="atk">공격력순</option><option value="ele">속성값순</option><option value="crit">회심률순</option></select></div>
+        <div><input type="text" id="dx-q" placeholder="이름 · 세트 · 스킬 검색"></div>
+      </div>
+      <div style="max-height:70vh;overflow:auto" id="dx-box"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 스킬 매핑 ══════════ -->
+<section id="pg-map" class="hide">
+  <div class="card">
+    <h3>스킬 딜 반영 매핑 <span class="sub" id="map-count"></span></h3>
+    <div class="body">
+      <div class="warn">각 스킬이 딜 계산에 어떻게 들어가는지 직접 고칠 수 있습니다.
+        틀린 게 보이면 고치고 <b>수정본 내보내기</b>로 파일을 뽑아 주세요.<br>
+        <b>쓸 수치</b> — 스킬 하나가 여러 효과를 동시에 가질 때가 있습니다.
+        예를 들어 앙심은 <code>15 → 15</code>(지속 초)와 <code>10 → 40</code>(공격력 %) 두 줄이 나오는데,
+        딜에 쓸 줄을 고르는 칸입니다. 대부분은 첫 줄이 맞습니다.<br>
+        <b>단위</b> — <code>%</code> 는 값을 100으로 나눠 배율로, <code>그대로</code> 는 숫자를 그대로 더합니다.</div>
+      <div class="row" style="margin-bottom:12px">
+        <div style="flex:0 0 190px"><select id="map-only">
+          <option value="atk">딜 반영 + 공격·속성</option>
+          <option value="on">딜 반영만</option>
+          <option value="off">딜 미반영만</option>
+          <option value="">전체</option></select></div>
+        <div><input type="text" id="map-q" placeholder="스킬 이름 검색"></div>
+        <div style="flex:0 0 auto"><button class="btn" id="map-export">수정본 내보내기</button></div>
+        <div style="flex:0 0 auto"><button class="btn" id="map-import">수정본 불러오기</button>
+          <input type="file" id="map-file" accept=".json,application/json" style="display:none"></div>
+        <div style="flex:0 0 auto"><button class="btn dg" id="map-reset">기본값 복원</button></div>
+      </div>
+      <div style="max-height:70vh;overflow:auto" id="map-box"></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+<div id="modal-root"></div>
+
+<script id="app-data" type="application/json">/*__DATA__*/</script>
+<script>window.__DATA__ = JSON.parse(document.getElementById('app-data').textContent);</script>
+<script>/*__ENGINE__*/</script>
+<script>/*__APP__*/</script>
+</body>
+</html>

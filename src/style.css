@@ -1,0 +1,337 @@
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#0e1116; --panel:#151a21; --panel2:#1b222b; --panel3:#222b36;
+  --line:#28313d; --line2:#36424f;
+  --txt:#e8edf4; --dim:#8593a5; --dim2:#5f6c7d;
+  --accent:#f0a93b; --accent2:#57a9f5;
+  --good:#5ec26a; --bad:#e2564a;
+  --r:12px;
+}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);
+  font:14px/1.55 "Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:700}
+button{font:inherit;cursor:pointer;color:inherit}
+input,select{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#333d4a;border-radius:6px;border:2px solid var(--bg)}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- 헤더 ---------- */
+header.top{position:sticky;top:0;z-index:60;background:#0e1116e8;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1440px;margin:0 auto;padding:11px 18px;display:flex;align-items:center;gap:14px}
+.brand{font-size:16px;font-weight:800;letter-spacing:-.02em}
+.brand span{color:var(--accent)}
+nav.tabs{display:flex;gap:3px;margin-left:auto;background:var(--panel);padding:3px;border-radius:10px;border:1px solid var(--line)}
+nav.tabs button{background:none;border:0;color:var(--dim);padding:6px 16px;border-radius:8px;font-weight:600;font-size:13px}
+nav.tabs button.on{background:var(--panel3);color:var(--txt)}
+nav.tabs button:hover:not(.on){color:var(--txt)}
+
+main{max-width:1440px;margin:0 auto;padding:18px}
+.hide{display:none !important}
+
+/* ---------- 레이아웃 ---------- */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:18px;align-items:start}
+@media(max-width:1080px){.layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){
+  main{padding:12px 10px}
+  .card .body{padding:12px 11px}
+  .card>h3{padding:10px 11px}
+  .top-in{flex-wrap:wrap;gap:8px;padding:9px 10px}
+  .brand{font-size:15px}
+  nav.tabs{width:100%;margin-left:0;justify-content:space-between}
+  nav.tabs button{padding:6px 8px;font-size:12.5px;white-space:nowrap;flex:1}
+  .sticky{position:static}
+}
+.sticky{position:sticky;top:74px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:14px;overflow:hidden}
+.card>h3{padding:11px 15px;font-size:12.5px;color:var(--dim);letter-spacing:.03em;
+  display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);text-transform:uppercase}
+.card>h3 .sub{margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:var(--dim2)}
+.card .body{padding:14px 15px}
+
+/* ---------- 장비 슬롯 ---------- */
+.slot{display:flex;gap:12px;align-items:center;width:100%;text-align:left;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;transition:.13s}
+.slot:hover{border-color:var(--line2);background:var(--panel3)}
+.slot.empty{border-style:dashed;color:var(--dim)}
+.slot .ico{width:42px;height:42px;flex:0 0 42px;border-radius:9px;background:#0d1116;
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.slot .ico img{width:100%;height:100%;object-fit:contain}
+.slot .ico .ph{font-size:11px;color:var(--dim2);font-weight:700}
+.slot .tx{flex:1;min-width:0}
+.slot .tx b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .tx em{font-style:normal;font-size:11.5px;color:var(--dim);display:block;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .rt{flex:0 0 auto;text-align:right;font-size:11.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+.slot .rt b{display:block;color:var(--txt);font-size:13px}
+
+.gearrow{margin-bottom:9px}
+.gearsub{display:flex;gap:7px;margin:7px 0 0 54px;flex-wrap:wrap;align-items:center}
+.gearsub .mini{font-size:11px;color:var(--dim2);align-self:center}
+
+/* ---------- 폼 ---------- */
+label.f{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;font-weight:600}
+select,input[type=number],input[type=text]{width:100%;background:#0c1015;border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;outline:none;transition:.13s}
+select:hover,input:hover{border-color:var(--line2)}
+select:focus,input:focus{border-color:var(--accent2)}
+select:disabled{opacity:.35}
+select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
+.row{display:flex;gap:9px}
+.row>*{flex:1;min-width:0}
+
+.btn{background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:9px;font-weight:600;transition:.13s}
+.btn:hover{border-color:var(--line2);background:var(--panel3)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#1c1305}
+.btn.p:hover{filter:brightness(1.09)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+.btn.dg{color:#f0a099}
+.btn.gh{background:none;border-color:transparent;color:var(--dim);padding:5px 8px}
+.btn.gh:hover{color:var(--txt);background:var(--panel2)}
+.btnrow{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ---------- 결과 패널 ---------- */
+.res .body{padding:16px 15px}
+.big{font-size:38px;font-weight:800;letter-spacing:-.035em;line-height:1.05;font-variant-numeric:tabular-nums}
+.big.sub2{font-size:26px;color:var(--accent)}
+.reslabel{font-size:11px;color:var(--dim);font-weight:600;letter-spacing:.03em;margin-bottom:2px}
+.divide{height:1px;background:var(--line);margin:14px 0}
+.kv{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.kv span{color:var(--dim)}
+.kv b{font-variant-numeric:tabular-nums}
+
+/* ---------- 태그/칩 ---------- */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;
+  font-size:11px;background:var(--panel3);color:var(--dim);border:1px solid var(--line)}
+.chip.g{background:#1b3a22;color:#8fdc9a;border-color:#2b5734}
+.chip.w{background:#3a2e15;color:#e8c07d;border-color:#574421}
+.chip.r{background:#3a1c19;color:#f0a099;border-color:#572824}
+.chip.a{background:#16324d;color:#8fc6f5;border-color:#224a70}
+.chip.q{background:#2b1b3f;color:#cbb0f2;border-color:#463070}
+
+/* ---------- 필터 아이콘 그리드 ---------- */
+.igrid{display:flex;flex-wrap:wrap;gap:6px}
+.igrid button{width:46px;height:46px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;
+  font-size:9.5px;color:var(--dim);line-height:1.1;overflow:hidden;transition:.12s}
+.igrid button img{width:26px;height:26px;object-fit:contain}
+.igrid button:hover{border-color:var(--line2)}
+.igrid button.on{border-color:var(--accent2);background:#15263a;color:var(--txt);box-shadow:0 0 0 1px var(--accent2) inset}
+.igrid.lg button{width:52px;height:52px}
+.igrid.lg button img{width:38px;height:38px}
+.igrid.txt button{width:auto;min-width:52px;padding:0 11px;height:34px;font-size:12px;font-weight:600}
+.specdet{margin-bottom:12px}
+.specdet>summary{padding:2px 0 4px;font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.specdet>summary:hover{color:var(--accent2)}
+.specdet .fset:last-child{margin-bottom:0}
+.moredet{margin-bottom:12px}
+.moredet>summary{padding:2px 0 6px;font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.moredet>summary:hover{color:var(--accent2)}
+.moredet .fset:last-child{margin-bottom:0}
+
+/* ---------- 좁은 화면(폰)에서의 선택 창 ----------
+   필터 아이콘 그리드가 세로로 길어져 검색칸·결과가 화면 밖으로 밀리는 것을 막는다 */
+@media(max-width:700px){
+  .modal{padding:10px 8px}
+  .modal-in{max-height:calc(100vh - 20px);max-height:calc(100dvh - 20px)}
+  .modal-hd{padding:11px 12px}
+  .modal-bd{padding:12px 12px}
+  /* 아이콘 두 줄까지만 보이고 나머지는 그 안에서 스크롤 — 검색칸과 결과가 한 화면에 들어오게 */
+  #mo-filters .igrid{max-height:110px;overflow-y:auto;align-content:flex-start;
+    padding:3px;border:1px solid var(--line);border-radius:9px;background:#0c1015}
+  #mo-filters .igrid.lg{max-height:122px}
+  #mo-filters .igrid.txt{max-height:150px}
+  #mo-filters .row{flex-wrap:wrap}
+  #mo-filters .row>*{flex:1 1 100%}
+  .fset{margin-bottom:10px}
+}
+
+/* ---------- 모달 선택기 ---------- */
+.modal{position:fixed;inset:0;z-index:100;background:#060809cc;backdrop-filter:blur(3px);
+  display:flex;align-items:flex-start;justify-content:center;padding:36px 16px}
+.modal-in{background:var(--panel);border:1px solid var(--line2);border-radius:14px;
+  width:100%;max-width:1080px;max-height:calc(100vh - 72px);display:flex;flex-direction:column;overflow:hidden}
+.modal-hd{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.modal-hd h3{font-size:15px}
+.modal-bd{padding:14px 16px;overflow:auto;flex:1}
+.fset{margin-bottom:12px}
+.fset>.lbl{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px}
+.fset>.lbl .clr{margin-left:auto;font-weight:500;color:var(--dim2);cursor:pointer;font-size:11px}
+.fset>.lbl .clr:hover{color:var(--accent2)}
+
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:8px}
+.pitem{display:flex;gap:10px;align-items:center;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:9px 11px;text-align:left;transition:.12s;width:100%}
+.pitem:hover{border-color:var(--accent2);background:var(--panel3)}
+.pitem.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.pitem .ic{width:38px;height:38px;flex:0 0 38px;border-radius:8px;background:#0d1116;overflow:hidden;
+  display:flex;align-items:center;justify-content:center}
+.pitem .ic img{width:100%;height:100%;object-fit:contain}
+.pitem .tx{flex:1;min-width:0}
+.pitem .tx b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pitem .tx em{font-style:normal;font-size:11px;color:var(--dim);display:block;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pitem .st{flex:0 0 auto;font-size:11px;color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+.pitem .st b{display:block;color:var(--txt);font-size:12.5px}
+
+/* ---------- 표 ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:#ffffff07}
+
+/* ---------- 스킬 목록 ---------- */
+.sk{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid #1f272f}
+.sk:last-child{border:0}
+.sk .nm{font-size:13px;min-width:0}
+.sk .nm em{font-style:normal;color:var(--dim2);font-size:10.5px;display:block}
+.sk input{width:56px;padding:3px 6px;font-size:12px;text-align:right}
+.muted{color:var(--dim);font-size:12.5px}
+details>summary{cursor:pointer;color:var(--dim);font-size:12px;padding:5px 0;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:'▸ ';color:var(--dim2)}
+details[open]>summary::before{content:'▾ '}
+
+/* ---------- 스타일 강화 ---------- */
+.stylebox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+input[type=range]{width:100%;accent-color:var(--accent);background:transparent}
+.mstone{display:flex;gap:8px;align-items:center;margin-top:7px}
+.mstone .t{font-size:11px;color:var(--dim);width:34px;flex:0 0 34px;font-weight:700}
+.mstone .opts{display:flex;gap:5px;flex:1}
+.mstone button{flex:1;padding:5px;border-radius:7px;background:#0c1015;border:1px solid var(--line);
+  font-size:11.5px;color:var(--dim)}
+.mstone button.on{border-color:var(--accent);color:var(--txt);background:#2a2110}
+.mstone button:disabled{opacity:.3;cursor:default}
+
+.warn{background:#3a2e1533;border:1px solid #574421;color:#e8c07d;padding:8px 11px;border-radius:9px;font-size:12px;margin-bottom:10px}
+.note{color:var(--dim2);font-size:11.5px;line-height:1.6}
+.bar{height:5px;background:var(--accent);border-radius:3px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#1c1305;
+  padding:10px 20px;border-radius:9px;font-weight:700;z-index:200;opacity:0;transition:.22s;pointer-events:none}
+.toast.on{opacity:1;bottom:34px}
+.empty{color:var(--dim);padding:34px;text-align:center}
+
+/* ---------- 일괄 선택 ---------- */
+.modal-in.wide{max-width:1360px}
+.bulk{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+@media(max-width:1100px){.bulk{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bcol{background:var(--panel2);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:0}
+.bcol>h4{padding:8px 10px;font-size:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px}
+.bcol>h4 .n{margin-left:auto;font-weight:500;color:var(--dim2);font-size:11px}
+.bcol .list{overflow:auto;max-height:46vh;padding:6px}
+.bitem{display:flex;gap:7px;align-items:center;width:100%;text-align:left;background:none;border:1px solid transparent;
+  border-radius:8px;padding:6px 7px;margin-bottom:3px;transition:.1s}
+.bitem:hover{background:var(--panel3);border-color:var(--line)}
+.bitem.on{background:#2a2110;border-color:var(--accent)}
+.bitem .ic{width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#0d1116;overflow:hidden}
+.bitem .ic img{width:100%;height:100%;object-fit:contain}
+.bitem .tx{flex:1;min-width:0}
+.bitem .tx b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.bitem .tx em{font-style:normal;font-size:10.5px;color:var(--dim);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bitem .sl{flex:0 0 auto;font-size:10px;color:var(--dim2)}
+
+.selskills{display:flex;flex-wrap:wrap;gap:5px;min-height:26px;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:5px;background:#15263a;border:1px solid #224a70;color:#cfe4fa;
+  border-radius:20px;padding:3px 6px 3px 10px;font-size:12px}
+.tag button{background:none;border:0;color:#8fc6f5;padding:0 3px;font-size:13px;line-height:1}
+.tag button:hover{color:#fff}
+
+.footbar{position:sticky;bottom:0;background:linear-gradient(180deg,#151a2100,#151a21 22%);
+  border-top:1px solid var(--line);padding:12px 16px;margin:12px -16px -14px;display:flex;gap:14px;align-items:flex-start}
+.footbar .prev{flex:1;min-width:0}
+.footbar .btns{flex:0 0 auto;display:flex;gap:7px;align-items:center}
+
+.stonerow{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #1f272f}
+.stonerow:last-child{border:0}
+.stonerow .nm{flex:1;min-width:0;font-size:13px}
+.stonerow .cnt{display:flex;align-items:center;gap:6px}
+.stonerow .cnt b{width:22px;text-align:center;font-variant-numeric:tabular-nums}
+.cbtn{width:24px;height:24px;border-radius:6px;background:var(--panel3);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;padding:0}
+.cbtn:hover{border-color:var(--accent2)}
+.cbtn:disabled{opacity:.3;cursor:default}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;display:inline-block}
+.slotbar{display:flex;gap:3px;flex-wrap:wrap}
+.slotbar i{width:13px;height:13px;border-radius:4px;background:#0d1116;border:1px solid var(--line);display:inline-block}
+.slotbar i.f{background:var(--accent);border-color:var(--accent)}
+
+#calc-box table{font-size:12.5px}
+#calc-box th{text-transform:none;letter-spacing:0;font-size:12px;color:var(--dim);vertical-align:top}
+#calc-box .calcsteps td{font-variant-numeric:tabular-nums;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:12px}
+#calc-box .calcsteps b{font-family:inherit}
+#calc-box .lbl{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+#calc-box .note{font-size:11px;line-height:1.5}
+
+/* ---------- 장비 툴팁 (마우스 오버) ---------- */
+.tip{position:fixed;left:0;top:0;z-index:250;width:max-content;max-width:min(360px,calc(100vw - 16px));
+  background:#0b0f14f7;border:1px solid var(--line2);border-radius:10px;padding:10px 12px;
+  box-shadow:0 12px 32px #000a;font-size:12px;line-height:1.5;color:var(--txt);
+  pointer-events:none;opacity:0;visibility:hidden;transition:opacity .12s}
+.tip.on{opacity:1;visibility:visible}
+.tip-hd{font-size:13.5px;display:flex;flex-wrap:wrap;align-items:center;gap:5px;word-break:keep-all}
+.tip-sub{color:var(--dim);font-size:11.5px;margin-top:1px}
+.tip-stat{margin-top:6px;color:var(--dim);font-variant-numeric:tabular-nums}
+.tip-stat b{color:var(--txt)}
+.tip-sec{margin-top:8px;padding-top:7px;border-top:1px solid var(--line)}
+.tip-lbl{font-size:10.5px;color:var(--dim2);font-weight:700;letter-spacing:.04em;margin-bottom:3px}
+.tip-sk+.tip-sk{margin-top:5px}
+.tip-lv{font-size:11px;color:var(--accent2);font-variant-numeric:tabular-nums}
+.tip-lv.ov{color:var(--bad)}
+.tip-desc{color:var(--dim);font-size:11.5px}
+.tip-dim{color:var(--dim)}
+.tip-ammo{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tip-ammo .tip-dim{font-size:11px}
+.tip-ok{color:var(--good)}
+
+/* ---------- 무기 슬롯 오른쪽: 무기 수치 | 스타일 적용 수치 ---------- */
+.slot .rt.wrt{display:flex;gap:14px;align-items:flex-start}
+.slot .rt .rc{display:block;text-align:right;white-space:nowrap}
+.slot .rt .rl{display:block;font-size:10px;color:var(--dim2);font-weight:600;letter-spacing:.02em}
+.slot .rt .rc.sty{padding-left:14px;border-left:1px solid var(--line2)}
+.slot .rt .rc.sty b{color:var(--accent)}
+.slot .rt .rc.sty.zero b{color:var(--txt)}
+.slot .rt .dlt{font-style:normal;font-size:10.5px;color:var(--good);margin-left:3px;font-weight:600}
+@media(max-width:560px){.slot .rt.wrt{flex-direction:column;gap:4px}.slot .rt .rc.sty{padding-left:0;border-left:0}}
+
+/* ---------- 집계 스킬: 레벨별 증가치 ---------- */
+.sk .ds{min-width:0;font-size:11.5px;color:var(--dim);line-height:1.5}
+.sk .ds b.cur{color:var(--accent);font-weight:800}
+.sk .ds-l{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.sk .ds-l span{padding:0 6px;border-radius:5px;background:#10151b;border:1px solid #232c36;color:var(--dim2);font-size:10.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sk .ds-l span.cur{color:#1c1305;background:var(--accent);border-color:var(--accent);font-weight:800}
+.sk .ds-ln>div{color:var(--dim2)}
+.sk .ds-ln>div i{font-style:normal;font-size:10px;margin-right:5px;color:var(--dim2)}
+.sk .ds-ln>div.cur{color:var(--txt);font-weight:700}
+.sk .ds-ln>div.cur i{color:var(--accent)}
+@media(max-width:700px){.sk{grid-template-columns:minmax(0,1fr) auto auto}.sk .ds{grid-column:1/-1;grid-row:2}}
+/* 좁은 화면 — 발동률 + 발동/평균/미발동 버튼은 아래 줄로 내린다 */
+@media(max-width:560px){
+  .sk{grid-template-columns:minmax(0,1fr) auto;gap:8px}
+  .sk .ds{grid-column:1/-1;grid-row:2}
+  .sk .note{grid-column:1/-1;grid-row:3;display:flex;align-items:center;gap:8px;text-align:left}
+  .sk .note .trig{margin-top:0;margin-left:auto;justify-content:flex-end}
+  .trigbar .trig{margin-left:0;width:100%}
+  .trigbar .trig button{flex:1}
+}
+
+/* ---------- 조건부 스킬: 발동 / 평균 / 미발동 ---------- */
+.trig{display:flex;gap:3px;margin-top:4px}
+.trig button{padding:2px 7px;border-radius:6px;background:#0c1015;border:1px solid var(--line);
+  color:var(--dim2);font-size:10.5px;line-height:1.7;white-space:nowrap}
+.trig button:hover{border-color:var(--accent2);color:var(--txt)}
+.trig button.on{border-color:var(--accent);background:#2a2110;color:var(--txt);font-weight:700}
+.trig button i{font-style:normal;color:var(--accent2);font-weight:700;font-variant-numeric:tabular-nums}
+.trig button.on i{color:var(--accent)}
+.sk .note{text-align:right}
+.sk .note .trig{justify-content:flex-end}
+.sk input:disabled{opacity:.45}
+.trigbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:9px;padding:7px 10px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:9px}
+.trigbar .note b{color:var(--accent2);font-variant-numeric:tabular-nums}
+.trigbar .trig{margin-top:0;margin-left:auto}
+.trigbar .trig button{padding:4px 10px;font-size:11.5px}

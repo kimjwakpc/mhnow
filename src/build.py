@@ -1,0 +1,15 @@
+import json, os, io
+ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+S=os.path.join(ROOT,'src'); Dd=os.path.join(ROOT,'data')
+rd=lambda p: io.open(p,encoding='utf-8').read()
+data={n: json.load(io.open(os.path.join(Dd,n+'.json'),encoding='utf-8'))
+      for n in ['skills','weapons','armor','driftstones','monsters','meta','rates','styles']}
+payload=json.dumps(data,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
+html=rd(os.path.join(S,'index.template.html'))
+html=html.replace('/*__CSS__*/', rd(os.path.join(S,'style.css')))
+html=html.replace('/*__DATA__*/', payload)
+html=html.replace('/*__ENGINE__*/', rd(os.path.join(S,'engine.js')))
+html=html.replace('/*__APP__*/', rd(os.path.join(S,'app.js')))
+out=os.path.join(ROOT,'몬헌나우_장비세팅.html')
+io.open(out,'w',encoding='utf-8').write(html)
+print('빌드 완료:',out, f'{os.path.getsize(out):,} bytes')

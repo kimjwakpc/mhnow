@@ -1,0 +1,9 @@
+# 받아오는 원본 — 13MB 쯤 되고 update.py 가 매번 다시 받으므로 저장소에 넣지 않는다
+sources/*.txt
+sources/mhnquest/mhnq_*.js
+# (sources/mhnquest/mhnquest.json 은 작아서 넣어 둔다 — mhn.quest 가 막혀도 빌드가 된다)
+
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
