@@ -670,9 +670,9 @@ function openArmorBulk() {
           <select class="sm" id="bk-mode" style="width:auto;margin-left:6px">
             <option value="or">고른 스킬 중 하나라도</option><option value="and">고른 스킬 전부</option></select>
           <span class="clr" id="bk-clear">조건 전체 해제</span></div>
-        <div class="row" style="margin-bottom:7px">
+        <div class="row bk-srch" style="margin-bottom:7px">
           <div><input type="text" id="bk-sq" placeholder="스킬 검색 — 예: 공, 회심, 속성"></div>
-          <div style="flex:0 0 260px"><input type="text" id="bk-q" placeholder="방어구 · 세트 이름 검색"></div>
+          <div><input type="text" id="bk-q" placeholder="방어구 · 세트 이름 검색"></div>
         </div>
         <div class="selskills" id="bk-sres" style="margin-bottom:7px"></div>
         <div class="selskills" id="bk-tags"></div>

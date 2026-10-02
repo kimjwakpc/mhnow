@@ -88,6 +88,7 @@ select:disabled{opacity:.35}
 select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
 .row{display:flex;gap:9px}
 .row>*{flex:1;min-width:0}
+.row.bk-srch>:last-child{flex:0 0 260px}
 
 .btn{background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:9px;font-weight:600;transition:.13s}
 .btn:hover{border-color:var(--line2);background:var(--panel3)}
@@ -152,6 +153,12 @@ select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
   #mo-filters .igrid.txt{max-height:150px}
   #mo-filters .row{flex-wrap:wrap}
   #mo-filters .row>*{flex:1 1 100%}
+  /* 방어구 일괄 선택 — 스킬 검색칸이 이름 검색칸에 밀려 안 보이던 문제. 위아래로 쌓는다 */
+  .row.bk-srch{flex-wrap:wrap;gap:7px}
+  .row.bk-srch>*,.row.bk-srch>:last-child{flex:1 1 100%}
+  /* 세트 그리드도 두 줄까지만 — 스킬 후보와 부위 목록이 한 화면에 들어오게 */
+  #bk-series{max-height:122px;overflow-y:auto;align-content:flex-start;
+    padding:3px;border:1px solid var(--line);border-radius:9px;background:#0c1015}
   .fset{margin-bottom:10px}
 }
 
@@ -1511,9 +1518,9 @@ function openArmorBulk() {
           <select class="sm" id="bk-mode" style="width:auto;margin-left:6px">
             <option value="or">고른 스킬 중 하나라도</option><option value="and">고른 스킬 전부</option></select>
           <span class="clr" id="bk-clear">조건 전체 해제</span></div>
-        <div class="row" style="margin-bottom:7px">
+        <div class="row bk-srch" style="margin-bottom:7px">
           <div><input type="text" id="bk-sq" placeholder="스킬 검색 — 예: 공, 회심, 속성"></div>
-          <div style="flex:0 0 260px"><input type="text" id="bk-q" placeholder="방어구 · 세트 이름 검색"></div>
+          <div><input type="text" id="bk-q" placeholder="방어구 · 세트 이름 검색"></div>
         </div>
         <div class="selskills" id="bk-sres" style="margin-bottom:7px"></div>
         <div class="selskills" id="bk-tags"></div>
