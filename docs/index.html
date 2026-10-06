@@ -293,6 +293,8 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent}
 .tip-sec{margin-top:8px;padding-top:7px;border-top:1px solid var(--line)}
 .tip-lbl{font-size:10.5px;color:var(--dim2);font-weight:700;letter-spacing:.04em;margin-bottom:3px}
 .tip-sk+.tip-sk{margin-top:5px}
+#bk-prev .chip[data-tip]{cursor:help}
+.tip-ds{font-size:11.5px}
 .tip-lv{font-size:11px;color:var(--accent2);font-variant-numeric:tabular-nums}
 .tip-lv.ov{color:var(--bad)}
 .tip-desc{color:var(--dim);font-size:11.5px}
@@ -312,15 +314,15 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent}
 @media(max-width:560px){.slot .rt.wrt{flex-direction:column;gap:4px}.slot .rt .rc.sty{padding-left:0;border-left:0}}
 
 /* ---------- 집계 스킬: 레벨별 증가치 ---------- */
-.sk .ds{min-width:0;font-size:11.5px;color:var(--dim);line-height:1.5}
-.sk .ds b.cur{color:var(--accent);font-weight:800}
-.sk .ds-l{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
-.sk .ds-l span{padding:0 6px;border-radius:5px;background:#10151b;border:1px solid #232c36;color:var(--dim2);font-size:10.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.sk .ds-l span.cur{color:#1c1305;background:var(--accent);border-color:var(--accent);font-weight:800}
-.sk .ds-ln>div{color:var(--dim2)}
-.sk .ds-ln>div i{font-style:normal;font-size:10px;margin-right:5px;color:var(--dim2)}
-.sk .ds-ln>div.cur{color:var(--txt);font-weight:700}
-.sk .ds-ln>div.cur i{color:var(--accent)}
+.sk .ds,.tip-ds{min-width:0;font-size:11.5px;color:var(--dim);line-height:1.5}
+.sk .ds b.cur,.tip-ds b.cur{color:var(--accent);font-weight:800}
+.sk .ds-l,.tip-ds .ds-l{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.sk .ds-l span,.tip-ds .ds-l span{padding:0 6px;border-radius:5px;background:#10151b;border:1px solid #232c36;color:var(--dim2);font-size:10.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sk .ds-l span.cur,.tip-ds .ds-l span.cur{color:#1c1305;background:var(--accent);border-color:var(--accent);font-weight:800}
+.sk .ds-ln>div,.tip-ds .ds-ln>div{color:var(--dim2)}
+.sk .ds-ln>div i,.tip-ds .ds-ln>div i{font-style:normal;font-size:10px;margin-right:5px;color:var(--dim2)}
+.sk .ds-ln>div.cur,.tip-ds .ds-ln>div.cur{color:var(--txt);font-weight:700}
+.sk .ds-ln>div.cur i,.tip-ds .ds-ln>div.cur i{color:var(--accent)}
 @media(max-width:700px){.sk{grid-template-columns:minmax(0,1fr) auto auto}.sk .ds{grid-column:1/-1;grid-row:2}}
 /* 좁은 화면 — 발동률 + 발동/평균/미발동 버튼은 아래 줄로 내린다 */
 @media(max-width:560px){
@@ -1503,7 +1505,7 @@ function skillPreview(pick) {
   });
   const html = ent.length ? ent.map(([k, v]) => {
     const max = SKILLS[k]?.max ?? 5, ov = v > max, act = !!cfgOf(k)?.g;
-    return `<span class="chip ${ov ? 'r' : (act ? 'g' : '')}">${esc(skName(k))}
+    return `<span class="chip ${ov ? 'r' : (act ? 'g' : '')}" data-tip="sk|${k}|${v}">${esc(skName(k))}
       ${ov ? `<b style="color:var(--bad)">${v}</b>` : v}${ov ? '/' + max : ''}</span>`;
   }).join(' ') : '<span class="muted">아직 선택된 방어구가 없습니다.</span>';
   return { html, slots, count: ent.length };
@@ -2325,8 +2327,17 @@ function tipArmor(a, part) {
     ${stones.length ? `<div class="tip-sec"><div class="tip-lbl">장착 표류석</div>${stones.map(x =>
       `<div class="tip-sk"><b>${esc(skName(x.kind))}</b> <span class="tip-dim">${esc(x.color)}</span></div>`).join('')}</div>` : ''}`;
 }
+// 스킬 하나 — 집계 스킬 칸과 같은 레벨별 설명 (방어구 일괄 선택의 「선택 조합 스킬」 칩)
+function tipSkill(k, lv) {
+  const s = SKILLS[k], max = s?.max ?? 5, cfg = cfgOf(k);
+  const d = skillDescHtml(k, Math.min(lv, max));
+  return `<div class="tip-hd"><b>${esc(skName(k))}</b><span class="tip-lv${lv > max ? ' ov' : ''}">Lv${lv}/${max}</span></div>
+    <div class="tip-sub">${cfg?.g ? esc(GROUP_LABEL[cfg.g] || cfg.g) : '딜 미반영'}${lv > max ? ` · 상한 초과 — Lv${max} 로 계산` : ''}</div>
+    ${d ? `<div class="tip-sec ds tip-ds">${d}</div>` : ''}`;
+}
 function tipHtml(t) {
-  const [kind, v] = (t.dataset.tip || '').split('|');
+  const [kind, v, x] = (t.dataset.tip || '').split('|');
+  if (kind === 'sk') return SKILLS[v] ? tipSkill(v, +x || 1) : '';
   if (kind === 'wsel') { const w = W_BY_ID[S.w.id]; return w ? tipWeapon(w, true) : ''; }
   if (kind === 'w') { const w = W_BY_ID[v]; return w ? tipWeapon(w, false) : ''; }
   if (kind === 'asel') { const a = A_BY_ID[S.a[v]?.id]; return a ? tipArmor(a, v) : ''; }

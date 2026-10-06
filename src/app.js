@@ -645,7 +645,7 @@ function skillPreview(pick) {
   });
   const html = ent.length ? ent.map(([k, v]) => {
     const max = SKILLS[k]?.max ?? 5, ov = v > max, act = !!cfgOf(k)?.g;
-    return `<span class="chip ${ov ? 'r' : (act ? 'g' : '')}">${esc(skName(k))}
+    return `<span class="chip ${ov ? 'r' : (act ? 'g' : '')}" data-tip="sk|${k}|${v}">${esc(skName(k))}
       ${ov ? `<b style="color:var(--bad)">${v}</b>` : v}${ov ? '/' + max : ''}</span>`;
   }).join(' ') : '<span class="muted">아직 선택된 방어구가 없습니다.</span>';
   return { html, slots, count: ent.length };
@@ -1467,8 +1467,17 @@ function tipArmor(a, part) {
     ${stones.length ? `<div class="tip-sec"><div class="tip-lbl">장착 표류석</div>${stones.map(x =>
       `<div class="tip-sk"><b>${esc(skName(x.kind))}</b> <span class="tip-dim">${esc(x.color)}</span></div>`).join('')}</div>` : ''}`;
 }
+// 스킬 하나 — 집계 스킬 칸과 같은 레벨별 설명 (방어구 일괄 선택의 「선택 조합 스킬」 칩)
+function tipSkill(k, lv) {
+  const s = SKILLS[k], max = s?.max ?? 5, cfg = cfgOf(k);
+  const d = skillDescHtml(k, Math.min(lv, max));
+  return `<div class="tip-hd"><b>${esc(skName(k))}</b><span class="tip-lv${lv > max ? ' ov' : ''}">Lv${lv}/${max}</span></div>
+    <div class="tip-sub">${cfg?.g ? esc(GROUP_LABEL[cfg.g] || cfg.g) : '딜 미반영'}${lv > max ? ` · 상한 초과 — Lv${max} 로 계산` : ''}</div>
+    ${d ? `<div class="tip-sec ds tip-ds">${d}</div>` : ''}`;
+}
 function tipHtml(t) {
-  const [kind, v] = (t.dataset.tip || '').split('|');
+  const [kind, v, x] = (t.dataset.tip || '').split('|');
+  if (kind === 'sk') return SKILLS[v] ? tipSkill(v, +x || 1) : '';
   if (kind === 'wsel') { const w = W_BY_ID[S.w.id]; return w ? tipWeapon(w, true) : ''; }
   if (kind === 'w') { const w = W_BY_ID[v]; return w ? tipWeapon(w, false) : ''; }
   if (kind === 'asel') { const a = A_BY_ID[S.a[v]?.id]; return a ? tipArmor(a, v) : ''; }
