@@ -61,12 +61,13 @@ const FILTER_SKILLS = Object.values(SKILLS).filter(s => !s.unknown).sort((a, b) 
 /* 발동률 — 앞에 있는 것이 이긴다
      1. S.corr        이번 세팅에서 직접 고친 값 (집계 스킬 칸)
      2. CFG_OV.rate   스킬 매핑에서 저장한 값 (내보내기에 담긴다)
-     3. SKILL_CFG.rate engine.js 에 박아 둔 값
+     3. SKILL_CFG.rate engine.js 에 박아 둔 값  ('ailment' = 지금 무기·스킬의 상태 이상 축적 확률에 연동)
      4. 나우칼 무기 종류별 표 → 공통 표
      5. SKILL_CFG.corr */
 function defaultRateOf(k) {                    // S.corr 을 빼고 본 기본값
   const ov = CFG_OV[k];
   if (ov && ov.rate != null) return ov.rate;
+  if (SKILL_CFG[k]?.rate === 'ailment') return linkedAilmentRate();
   if (SKILL_CFG[k]?.rate != null) return SKILL_CFG[k].rate;
   const ws = W_BY_ID[S.w.id];
   const byT = ws && RATES.byType[ws.cat];
@@ -74,6 +75,14 @@ function defaultRateOf(k) {                    // S.corr 을 빼고 본 기본�
   if (RATES.default[k] != null) return RATES.default[k];
   return cfgOf(k)?.corr ?? 1;
 }
+/* 「상태 이상 축적 시 위력 UP」 발동률 — 축적이 일어나는 비율 = 평소 축적 확률 (뒤에서 공격은 빼고 본다).
+   독·마비·수면·폭파 무기가 아니면 축적이 없으므로 0. 무기를 안 골랐으면 기본 1/3. */
+function linkedAilmentRate() {
+  const ws = weaponStats(); if (!ws) return 1 / 3;
+  const a = ailmentChance(ws.elem, aggregate().capped);
+  return a ? Math.round(a.normal * 1e4) / 1e4 : 0;
+}
+const isAilmentLinked = k => SKILL_CFG[k]?.rate === 'ailment' && CFG_OV[k]?.rate == null;
 function baseCorrOf(k) {                       // 발동/미발동 버튼을 무시한 "평균" 값
   return S.corr[k] != null ? S.corr[k] : defaultRateOf(k);
 }
@@ -979,6 +988,8 @@ function renderAilment(ws, agg) {
     `${esc(skName(p.kind))} Lv${p.lv} × ${p.frac} <b>+${pct(p.v)}</b>`)];
   box.innerHTML = `<div class="ail-row"><span class="reslabel">${esc(nm)} 축적 확률</span><b>${pct(a.normal)}</b></div>
     ${a.sneak ? `<div class="ail-row"><span class="reslabel">뒤에서 공격 시</span><b>${pct(a.back)}</b></div>` : ''}
+    ${agg.capped.BUILDUP_BOOST ? `<div class="ail-link">→ ${esc(skName('BUILDUP_BOOST'))} 발동률 <b>${fmt(corrOf('BUILDUP_BOOST'), 4)}</b>${
+      S.trig.BUILDUP_BOOST ? ` (${S.trig.BUILDUP_BOOST === 'on' ? '발동' : '미발동'} 버튼)` : isAilmentLinked('BUILDUP_BOOST') && S.corr.BUILDUP_BOOST == null ? ' (연동)' : ' (직접 고친 값 사용 중)'}</div>` : ''}
     <div class="ail-src">${src.join(' · ')}${a.sneak ? `<br>뒤에서: ${esc(skName(a.sneak.kind))} Lv${a.sneak.lv} × ${a.sneak.frac} <b>+${pct(a.sneak.v)}</b>` : ''}${
       a.base + a.parts.reduce((x, p) => x + p.v, 0) + (a.sneak ? a.sneak.v : 0) > 1 + 1e-9 ? '<br>합계는 100% 를 넘지 않습니다' : ''}</div>`;
 }
@@ -1145,8 +1156,9 @@ function renderSkills(agg, blocked) {
               : (act ? (GROUP_LABEL[cfg.g] || cfg.g) : '딜 미반영')}</em></div>
       <div class="ds">${skillDescHtml(k, lv)}</div>
       <div>${act ? `<input type="number" step="0.01" min="0" max="99" value="${corr}" data-corr="${k}"${
-        cur ? ' disabled title="발동/미발동을 고른 상태에서는 고칠 수 없습니다 — 평균을 누르면 다시 열립니다"' : ''}>` : ''}</div>
-      <div class="note">${act ? '발동률' : ''}${cond ? `<div class="trig" data-trigrow="${k}">${
+        cur ? ' disabled title="발동/미발동을 고른 상태에서는 고칠 수 없습니다 — 평균을 누르면 다시 열립니다"'
+          : (isAilmentLinked(k) && S.corr[k] == null ? ' title="상태 이상 축적 확률에 연동된 값입니다 — 고치면 이 세팅에서는 고친 값이 우선합니다"' : '')}>` : ''}</div>
+      <div class="note">${act ? (isAilmentLinked(k) && S.corr[k] == null && !cur ? '<span class="link-tag">축적 확률 연동</span>' : '발동률') : ''}${cond ? `<div class="trig" data-trigrow="${k}">${
         TRIG_BTN.map(([v, t]) => { const ov = onValOf(k);
           const ttl = v === 'on' ? ` title="발동률 ${ov}"` : (v === 'off' ? ' title="발동률 0"' : ' title="기본 발동률로"');
           return `<button class="${cur === v ? 'on' : ''}"${ttl} data-trig="${k}" data-tv="${v}">${t}${
@@ -1375,7 +1387,7 @@ function renderMap() {
           <option value="0.01"${(c.s ?? 0.01) === 0.01 ? ' selected' : ''}>%</option>
           <option value="1"${c.s === 1 ? ' selected' : ''}>그대로</option></select></td>
         <td><input class="sm" type="number" step="0.01" min="0" max="99" value="${defaultRateOf(s.kind)}" data-mc="${s.kind}"${
-          c.g ? '' : ' disabled'}></td>
+          c.g ? (isAilmentLinked(s.kind) ? ' title="지금 무기·스킬의 상태 이상 축적 확률에 연동 — 여기서 고치면 연동이 풀리고, 기본값 복원으로 다시 연동됩니다"' : '') : ' disabled'}></td>
         <td style="text-align:center"><input type="checkbox" data-mcond="${s.kind}"${condOf(s.kind) ? ' checked' : ''}${
           c.g ? '' : ' disabled title="딜 미반영 스킬에는 필요 없습니다"'}></td>
         <td><input class="sm" type="number" step="0.01" min="0" max="99" value="${onValOf(s.kind)}" data-mon="${s.kind}"${

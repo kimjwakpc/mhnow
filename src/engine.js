@@ -104,7 +104,8 @@ const SKILL_CFG = {
   PURSUIT_PARALYSIS:          { g:'G', i:0, s:0.01, corr:0.20 },   // 추가 공격【마비】
   PURSUIT_BLAST:              { g:'B', i:0, s:1, corr:1,        // 추가 공격【폭파】 — 폭파가 터질 때마다 공격력 +N (물리 가산)
                                 rate:4, onv:10, cond:true },   // 발동률 = 한 전투에서 터지는 횟수. 평소 4회, 최대 10회
-  BUILDUP_BOOST:              { g:'G', i:0, s:0.01, corr:0.33 },   // 상태 이상 축적 시 위력 UP
+  BUILDUP_BOOST:              { g:'G', i:0, s:0.01, corr:0.33,     // 상태 이상 축적 시 위력 UP
+                                rate:'ailment' },              // 발동률 = 축적 확률 (ailmentChance, 평소 기준). 상태 이상 무기가 아니면 0
   SPECIAL_BOOST:              { g:'G', i:0, s:0.01, corr:0 },      // 특수 스킬 위력 상승 (특수기 전용)
   SP_MOVE_BOOST_SECRET:       { g:'G', i:0, s:0.01, corr:1,        // 특수 스킬 위력 UP·경지
                                 req:{ kind:'SPECIAL_BOOST', lv:5 } },  // 이름이 기초 스킬과 달라 선행 조건을 직접 지정
