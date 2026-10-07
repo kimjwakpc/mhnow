@@ -309,6 +309,31 @@ function calcDamage(p) {
   };
 }
 
+/* ---- 상태 이상 축적 확률 ----
+   독·마비·수면·폭파 무기가 맞혔을 때 축적이 일어날 확률.
+     기본                         1/3
+     고룡 버프 (속성이 맞을 때)   Lv 당 1/9  (최대 Lv3 → 1/3)   염왕룡의 폭발가루 = 폭파, 하룡의 독 안개 = 독
+     추가 공격【폭파】 (폭파 무기) Lv 당 1/15 (최대 Lv5 → 1/3)
+     기습【상태 이상】 (뒤에서만)  Lv 당 2/15 (최대 Lv5 → 2/3)
+   합계는 1(100%)을 넘지 않는다. */
+const AILMENT_ELEMS = ['poison', 'paralysis', 'sleep', 'blast'];
+const AILMENT_CHANCE = [
+  { kind: 'TEOSTRA_BLESS',    per: 1 / 9,  frac: '1/9',  elem: 'blast' },
+  { kind: 'CHAMELEOS_POISON', per: 1 / 9,  frac: '1/9',  elem: 'poison' },
+  { kind: 'PURSUIT_BLAST',    per: 1 / 15, frac: '1/15', elem: 'blast' },
+];
+const AILMENT_SNEAK = { kind: 'ABNORMAL_STATUS_ENHANCEMENT', per: 2 / 15, frac: '2/15' };
+function ailmentChance(elem, skills) {
+  if (!AILMENT_ELEMS.includes(elem)) return null;
+  const sk = skills || {}, base = 1 / 3;
+  const parts = AILMENT_CHANCE.filter(c => c.elem === elem && sk[c.kind] > 0)
+    .map(c => ({ kind: c.kind, lv: sk[c.kind], frac: c.frac, v: sk[c.kind] * c.per }));
+  const normal = Math.min(1, base + parts.reduce((a, b) => a + b.v, 0));
+  const sLv = sk[AILMENT_SNEAK.kind] || 0;
+  const sneak = sLv ? { kind: AILMENT_SNEAK.kind, lv: sLv, frac: AILMENT_SNEAK.frac, v: sLv * AILMENT_SNEAK.per } : null;
+  return { base, parts, normal, sneak, back: Math.min(1, normal + (sneak ? sneak.v : 0)) };
+}
+
 /* ---- 자체 검증 ---- */
 function _selfTest(SKILLS) {
   const r = calcDamage({
@@ -323,4 +348,4 @@ function _selfTest(SKILLS) {
   return { pass, got: { critTotal: r.critTotal, ...r.parts, final: r.finalDmg }, exp };
 }
 
-if (typeof module !== 'undefined') module.exports = { calcDamage, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };
+if (typeof module !== 'undefined') module.exports = { calcDamage, ailmentChance, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };

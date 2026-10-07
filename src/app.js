@@ -943,12 +943,13 @@ function render() {
     renderSkills(agg);
     $('#res-final').textContent = '—'; $('#res-motion').textContent = '—';
     $('#res-kv').innerHTML = '<div class="muted">무기를 선택하면 딜이 계산됩니다.</div>';
-    $('#res-detail').innerHTML = ''; renderCalc(null); return;
+    $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); return;
   }
   const r = calc(ws, agg);
   renderSkills(agg, r.blocked);
   renderCalc(r, ws);
   $('#res-final').textContent = fmt(r.finalDmg, 1);
+  renderAilment(ws, agg);
   $('#res-motion').textContent = S.motion ? fmt(r.motionDmg, 1) : '—';
   $('#res-kv').innerHTML = `
     <div class="kv"><span>총 공격력</span><b>${fmt(r.totalAtk, 1)}</b></div>
@@ -965,6 +966,21 @@ function render() {
       ['G 최종 곱', r.acc.G, 1], ['회심격【속성】', r.acc.CRIT_ELEM, 1], ['슈퍼회심', r.acc.CRIT_MULT, 1],
       ['흉회심 배율', r.acc.BRUTAL, 1]].map(([n, v, p]) =>
       `<tr><th>${n}</th><td class="n">${p ? (v * 100).toFixed(1) + '%' : fmt(v, 1)}</td></tr>`).join('')}</table>`;
+}
+// 기댓값 공격력 밑 — 독·마비·수면·폭파 무기일 때만 상태 이상 축적 확률
+function renderAilment(ws, agg) {
+  const box = $('#res-ail');
+  const a = ws && ailmentChance(ws.elem, agg.capped);
+  box.classList.toggle('hide', !a);
+  if (!a) { box.innerHTML = ''; return; }
+  const pct = v => (v * 100).toFixed(1) + '%';
+  const nm = (META.elementNames[ws.elem] || ws.elem).replace('속성', '');
+  const src = [`기본 1/3 <b>${pct(a.base)}</b>`, ...a.parts.map(p =>
+    `${esc(skName(p.kind))} Lv${p.lv} × ${p.frac} <b>+${pct(p.v)}</b>`)];
+  box.innerHTML = `<div class="ail-row"><span class="reslabel">${esc(nm)} 축적 확률</span><b>${pct(a.normal)}</b></div>
+    ${a.sneak ? `<div class="ail-row"><span class="reslabel">뒤에서 공격 시</span><b>${pct(a.back)}</b></div>` : ''}
+    <div class="ail-src">${src.join(' · ')}${a.sneak ? `<br>뒤에서: ${esc(skName(a.sneak.kind))} Lv${a.sneak.lv} × ${a.sneak.frac} <b>+${pct(a.sneak.v)}</b>` : ''}${
+      a.base + a.parts.reduce((x, p) => x + p.v, 0) + (a.sneak ? a.sneak.v : 0) > 1 + 1e-9 ? '<br>합계는 100% 를 넘지 않습니다' : ''}</div>`;
 }
 function calc(ws, agg) {
   const corr = {};
