@@ -93,6 +93,8 @@ select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
 .btn.gh{background:none;border-color:transparent;color:var(--dim);padding:5px 8px}
 .btn.gh:hover{color:var(--txt);background:var(--panel2)}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
+#cur-build b{color:var(--txt)}
+#cur-build .clr{margin-left:6px;color:var(--dim2);cursor:pointer;text-decoration:underline;white-space:nowrap}
 
 /* ---------- 결과 패널 ---------- */
 .res .body{padding:16px 15px}

@@ -952,13 +952,14 @@ function render() {
     renderSkills(agg);
     $('#res-final').textContent = '—'; $('#res-motion').textContent = '—';
     $('#res-kv').innerHTML = '<div class="muted">무기를 선택하면 딜이 계산됩니다.</div>';
-    $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); return;
+    $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); return;
   }
   const r = calc(ws, agg);
   renderSkills(agg, r.blocked);
   renderCalc(r, ws);
   $('#res-final').textContent = fmt(r.finalDmg, 1);
   renderAilment(ws, agg);
+  updateSaveUI();
   $('#res-motion').textContent = S.motion ? fmt(r.motionDmg, 1) : '—';
   $('#res-kv').innerHTML = `
     <div class="kv"><span>총 공격력</span><b>${fmt(r.totalAtk, 1)}</b></div>
@@ -1192,6 +1193,42 @@ function renderSkills(agg, blocked) {
 const LS = 'mhnow_builds_v2';
 const loadB = () => { try { return JSON.parse(localStorage.getItem(LS)) || []; } catch (e) { return []; } };
 let BUILDS = loadB();
+/* 지금 불러와서 고치고 있는 세팅 — 「덮어쓰기」 대상. 저장 목록 안의 id 로 가리킨다 (새로고침하면 비워짐) */
+let CUR_ID = null;
+const newBid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function ensureIds() { BUILDS.forEach(b => { if (!b.id) b.id = newBid(); }); }
+ensureIds();
+const curBuild = () => (CUR_ID && BUILDS.find(b => b.id === CUR_ID)) || null;
+const BUILD_KEYS = ['w', 'a', 'style', 'corr', 'trig', 'motion'];
+function curDirty() {                          // 불러온 뒤 바뀐 게 있나
+  const b = curBuild(); if (!b) return false;
+  const now = snapshot(''), norm = (k, v) => JSON.stringify(v ?? (k === 'trig' || k === 'corr' ? {} : k === 'motion' ? 0 : null));
+  return BUILD_KEYS.some(k => norm(k, now[k]) !== norm(k, b[k]));
+}
+function overwriteBuild(b) {                   // 이름·id 는 그대로, 내용과 시각만 지금 세팅으로
+  const snap = snapshot(b.name);
+  BUILD_KEYS.forEach(k => b[k] = snap[k]); b.t = snap.t;
+  saveB(BUILDS); storeStatus();
+}
+function saveAsNew(defName) {
+  const n = prompt('새 세팅 이름', defName); if (!n) return false;
+  const b = { ...snapshot(n), id: newBid() };
+  BUILDS.push(b); CUR_ID = b.id; saveB(BUILDS); storeStatus();
+  toast(FILE_HANDLE ? '새로 저장했습니다 (파일에도 기록)' : '새로 저장했습니다');
+  return true;
+}
+/* 세팅 저장 버튼 — 불러온 세팅이 있으면 「덮어쓰기」, 없으면 「세팅 저장」(새로) */
+function updateSaveUI() {
+  const b = curBuild(), main = $('#btn-save'), nw = $('#btn-save-new'), info = $('#cur-build');
+  if (!main) return;
+  if (!b) { CUR_ID = null; main.textContent = '세팅 저장'; main.title = '새 세팅으로 저장'; nw.classList.add('hide'); info.innerHTML = ''; return; }
+  const dirty = curDirty();
+  main.textContent = '덮어쓰기'; main.title = `「${b.name}」에 지금 세팅을 덮어씁니다`;
+  nw.classList.remove('hide');
+  info.innerHTML = `불러온 세팅 <b>${esc(b.name)}</b> · ${dirty ? '<span style="color:var(--accent)">바뀐 내용 있음</span>' : '바뀐 내용 없음'}
+    <span class="clr" id="cur-detach" title="연결을 끊으면 세팅 저장이 새로 저장으로 돌아갑니다">연결 끊기</span>`;
+  $('#cur-detach').onclick = () => { CUR_ID = null; updateSaveUI(); };
+}
 
 /* ── 저장 파일 연결 ─────────────────────────────────────
    file:// 로 열면 브라우저 저장소가 창을 닫을 때 날아가는 경우가 많다.
@@ -1209,6 +1246,7 @@ async function writeFile() {
   } catch (e) { toast('파일 저장 실패 — 연결이 끊겼습니다'); FILE_HANDLE = null; storeStatus(); }
 }
 function saveB(b) {
+  ensureIds();
   try { localStorage.setItem(LS, JSON.stringify(b)); } catch (e) { }
   writeFile();
 }
@@ -1228,7 +1266,7 @@ async function openLinkedFile() {
     });
     const txt = await (await h.getFile()).text();
     const j = JSON.parse(txt);
-    BUILDS = j.builds || (Array.isArray(j) ? j : []);
+    BUILDS = j.builds || (Array.isArray(j) ? j : []); ensureIds();
     FILE_HANDLE = h;
     try { localStorage.setItem(LS, JSON.stringify(BUILDS)); } catch (e) { }
     storeStatus(); renderCompare(); toast(`${BUILDS.length}개 불러왔습니다 · 이제 자동 저장됩니다`);
@@ -1281,7 +1319,7 @@ function renderCompare() {
     <th class="n">회심</th><th class="n">기댓값</th><th class="n">모션딜</th><th style="width:110px"></th><th></th></tr></thead><tbody>${
     rows.map((x, n) => `<tr>
       <td>${n + 1}</td>
-      <td><b>${esc(x.b.name)}</b><br><span class="note">${new Date(x.b.t).toLocaleString('ko-KR')}</span></td>
+      <td><b>${esc(x.b.name)}</b>${x.b.id === CUR_ID ? ' <span class="chip g">불러온 세팅</span>' : ''}<br><span class="note">${new Date(x.b.t).toLocaleString('ko-KR')}</span></td>
       <td>${esc(x.e.ws.name)}<br><span class="note">${esc(x.e.ws.series)}</span></td>
       <td class="n">${fmt(x.e.r.totalAtk)}</td><td class="n">${fmt(x.e.r.totalEle)}</td>
       <td class="n">${(x.e.r.critTotal * 100).toFixed(0)}%</td>
@@ -1289,13 +1327,29 @@ function renderCompare() {
         <span class="note">${n ? ((x.e.r.finalDmg / max - 1) * 100).toFixed(1) + '%' : '기준'}</span></td>
       <td class="n">${x.e.r.motionDmg != null ? fmt(x.e.r.motionDmg, 1) : '—'}</td>
       <td><div class="bar" style="width:${(x.e.r.finalDmg / max * 100).toFixed(1)}%"></div></td>
-      <td><button class="btn sm" data-load="${x.i}">불러오기</button>
-          <button class="btn sm dg" data-del="${x.i}">삭제</button></td></tr>`).join('')}</tbody></table>`;
+      <td><div class="btnrow" style="gap:4px"><button class="btn sm" data-load="${x.i}">불러오기</button>
+          <button class="btn sm" data-over="${x.i}" title="지금 장비 세팅 화면의 내용으로 이 세팅을 덮어씁니다">덮어쓰기</button>
+          <button class="btn sm" data-ren="${x.i}">이름</button>
+          <button class="btn sm dg" data-del="${x.i}">삭제</button></div></td></tr>`).join('')}</tbody></table>`;
   box.querySelectorAll('[data-load]').forEach(b => b.onclick = e => {
-    restore(BUILDS[+e.target.dataset.load]); go('set'); toast('불러왔습니다');
+    const b = BUILDS[+e.target.dataset.load];
+    restore(b); CUR_ID = b.id; updateSaveUI(); go('set'); toast(`「${b.name}」을 불러왔습니다 — 고친 뒤 덮어쓰기로 저장됩니다`);
+  });
+  box.querySelectorAll('[data-over]').forEach(b => b.onclick = e => {
+    const t = BUILDS[+e.target.dataset.over];
+    if (!confirm(`「${t.name}」을 지금 장비 세팅 화면의 내용으로 덮어쓸까요?`)) return;
+    overwriteBuild(t); CUR_ID = t.id; updateSaveUI(); renderCompare(); toast(`「${t.name}」에 덮어썼습니다`);
+  });
+  box.querySelectorAll('[data-ren]').forEach(b => b.onclick = e => {
+    const t = BUILDS[+e.target.dataset.ren];
+    const n = prompt('세팅 이름', t.name); if (!n || n === t.name) return;
+    t.name = n; saveB(BUILDS); storeStatus(); updateSaveUI(); renderCompare();
   });
   box.querySelectorAll('[data-del]').forEach(b => b.onclick = e => {
-    BUILDS.splice(+e.target.dataset.del, 1); saveB(BUILDS); storeStatus(); renderCompare();
+    const t = BUILDS[+e.target.dataset.del];
+    if (!confirm(`「${t.name}」을 삭제할까요?`)) return;
+    BUILDS.splice(+e.target.dataset.del, 1); if (t.id === CUR_ID) CUR_ID = null;
+    saveB(BUILDS); storeStatus(); updateSaveUI(); renderCompare();
   });
 }
 
@@ -1579,9 +1633,14 @@ function boot() {
   buildDex(); buildMap(); renderWeapon(); renderArmor();
 
   $('#btn-save').onclick = () => {
-    const n = prompt('세팅 이름', `세팅 ${BUILDS.length + 1}`); if (!n) return;
-    BUILDS.push(snapshot(n)); saveB(BUILDS); storeStatus();
-    toast(FILE_HANDLE ? '저장했습니다 (파일에도 기록)' : '저장했습니다');
+    const b = curBuild();
+    if (!b) { saveAsNew(`세팅 ${BUILDS.length + 1}`); updateSaveUI(); return; }
+    overwriteBuild(b); updateSaveUI();
+    toast(`「${b.name}」에 덮어썼습니다${FILE_HANDLE ? ' (파일에도 기록)' : ''}`);
+  };
+  $('#btn-save-new').onclick = () => {
+    const b = curBuild();
+    saveAsNew(b ? `${b.name} 2` : `세팅 ${BUILDS.length + 1}`); updateSaveUI();
   };
   $('#btn-export').onclick = () => {
     const blob = new Blob([JSON.stringify({ v: 2, builds: BUILDS.length ? BUILDS : [snapshot('현재 세팅')] }, null, 1)], { type: 'application/json' });
@@ -1594,7 +1653,7 @@ function boot() {
     const rd = new FileReader();
     rd.onload = () => { try {
       const j = JSON.parse(rd.result), arr = j.builds || (Array.isArray(j) ? j : [j]);
-      BUILDS = BUILDS.concat(arr); saveB(BUILDS); storeStatus();
+      BUILDS = BUILDS.concat(arr.map(b => ({ ...b, id: newBid() }))); saveB(BUILDS); storeStatus();
       toast(`${arr.length}개 불러왔습니다`); go('cmp');
     } catch (err) { toast('파일을 읽지 못했습니다'); } };
     rd.readAsText(f); e.target.value = '';
@@ -1607,7 +1666,7 @@ function boot() {
     S.w = { id: null, gr: null, lv: 5 }; S.style = { lv: 0, m10: null, m15: null, m20: null, atk: 0, ele: 0, crit: 0 };
     PARTS.forEach(p => S.a[p] = { id: null, gr: null, stones: [] });
     S.corr = {}; S.trig = {}; S.motion = 0; $('#motion').value = '';
-    renderWeapon(); renderArmor(); render(); toast('초기화했습니다');
+    CUR_ID = null; renderWeapon(); renderArmor(); render(); toast('초기화했습니다');
   };
   if (location.hash.startsWith('#b=')) { try { restore(dec(location.hash.slice(3))); toast('공유 세팅을 불러왔습니다'); } catch (e) { } }
   const t = _selfTest(SKILLS);
