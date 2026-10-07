@@ -1217,17 +1217,59 @@ function saveAsNew(defName) {
   toast(FILE_HANDLE ? '새로 저장했습니다 (파일에도 기록)' : '새로 저장했습니다');
   return true;
 }
-/* 세팅 저장 버튼 — 불러온 세팅이 있으면 「덮어쓰기」, 없으면 「세팅 저장」(새로) */
+/* 세팅 저장 = 항상 새로 저장 · 덮어쓰기 = 선택창에서 고른 세팅에 덮어씀 */
 function updateSaveUI() {
-  const b = curBuild(), main = $('#btn-save'), nw = $('#btn-save-new'), info = $('#cur-build');
-  if (!main) return;
-  if (!b) { CUR_ID = null; main.textContent = '세팅 저장'; main.title = '새 세팅으로 저장'; nw.classList.add('hide'); info.innerHTML = ''; return; }
-  const dirty = curDirty();
-  main.textContent = '덮어쓰기'; main.title = `「${b.name}」에 지금 세팅을 덮어씁니다`;
-  nw.classList.remove('hide');
-  info.innerHTML = `불러온 세팅 <b>${esc(b.name)}</b> · ${dirty ? '<span style="color:var(--accent)">바뀐 내용 있음</span>' : '바뀐 내용 없음'}
-    <span class="clr" id="cur-detach" title="연결을 끊으면 세팅 저장이 새로 저장으로 돌아갑니다">연결 끊기</span>`;
-  $('#cur-detach').onclick = () => { CUR_ID = null; updateSaveUI(); };
+  const b = curBuild(), over = $('#btn-over'), info = $('#cur-build');
+  if (!over) return;
+  if (!b) CUR_ID = null;
+  over.disabled = !BUILDS.length;
+  over.title = BUILDS.length ? '저장된 세팅 중 하나를 골라 지금 세팅으로 덮어씁니다' : '저장된 세팅이 없습니다';
+  info.innerHTML = b ? `불러온 세팅 <b>${esc(b.name)}</b> · ${curDirty()
+    ? '<span style="color:var(--accent)">바뀐 내용 있음</span>' : '바뀐 내용 없음'}` : '';
+}
+function openOverwrite() {
+  if (!BUILDS.length) { toast('저장된 세팅이 없습니다 — 세팅 저장으로 먼저 저장하세요'); return; }
+  const ws = weaponStats(), now = ws ? calc(ws, aggregate()).finalDmg : null;
+  // 불러온 세팅을 맨 위에, 나머지는 최근 저장 순
+  const list = BUILDS.slice().sort((a, b) => (b.id === CUR_ID) - (a.id === CUR_ID) || (b.t || 0) - (a.t || 0));
+  let sel = curBuild() ? CUR_ID : null;
+  document.body.style.overflow = 'hidden';
+  $('#modal-root').innerHTML = `<div class="modal" id="mo"><div class="modal-in" style="max-width:560px">
+    <div class="modal-hd"><h3>덮어쓰기</h3><span class="note">어느 세팅에 지금 세팅을 덮어쓸까요?</span>
+      <button class="btn gh" style="margin-left:auto" id="mo-x">✕ 닫기</button></div>
+    <div class="modal-bd"><div class="ow-list" id="ow-list">${list.map(b => {
+      const e = evalBuild(b), w = W_BY_ID[b.w?.id];
+      const diff = e && now != null ? (now / e.r.finalDmg - 1) * 100 : null;
+      return `<button class="pitem" data-ow="${b.id}">
+        <span class="ic">${w?.icon ? `<img loading="lazy" src="${w.icon}">` : ''}</span>
+        <span class="tx"><b>${esc(b.name)}${b.id === CUR_ID ? ' <span class="chip g">불러온 세팅</span>' : ''}</b>
+          <em>${e ? esc(e.ws.name) : '무기 없음'} · ${new Date(b.t).toLocaleString('ko-KR')}</em></span>
+        <span class="st"><b>${e ? fmt(e.r.finalDmg, 1) : '—'}</b>${diff != null
+          ? `→ ${fmt(now, 1)} <span style="color:${diff >= 0 ? 'var(--good)' : 'var(--bad)'}">${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%</span>` : ''}</span>
+      </button>`; }).join('')}</div>
+      <div class="footbar"><div class="prev note" id="ow-msg"></div>
+        <div class="btns"><button class="btn" id="ow-cancel">취소</button>
+          <button class="btn p" id="ow-ok">덮어쓰기</button></div></div>
+    </div></div></div>`;
+  const paint = () => {
+    $$('#ow-list [data-ow]').forEach(x => x.classList.toggle('on', x.dataset.ow === sel));
+    const t = BUILDS.find(b => b.id === sel);
+    $('#ow-ok').disabled = !t;
+    $('#ow-msg').innerHTML = t ? `「<b style="color:var(--txt)">${esc(t.name)}</b>」의 내용이 지금 세팅으로 바뀝니다` : '덮어쓸 세팅을 고르세요';
+  };
+  $$('#ow-list [data-ow]').forEach(x => {
+    x.onclick = () => { sel = x.dataset.ow; paint(); };
+    x.ondblclick = () => { sel = x.dataset.ow; $('#ow-ok').click(); };
+  });
+  $('#ow-ok').onclick = () => {
+    const t = BUILDS.find(b => b.id === sel); if (!t) return;
+    overwriteBuild(t); CUR_ID = t.id; closeModal(); updateSaveUI();
+    if (!$('#pg-cmp').classList.contains('hide')) renderCompare();
+    toast(`「${t.name}」에 덮어썼습니다${FILE_HANDLE ? ' (파일에도 기록)' : ''}`);
+  };
+  $('#mo-x').onclick = $('#ow-cancel').onclick = closeModal;
+  bindBackdrop();
+  paint();
 }
 
 /* ── 저장 파일 연결 ─────────────────────────────────────
@@ -1269,7 +1311,7 @@ async function openLinkedFile() {
     BUILDS = j.builds || (Array.isArray(j) ? j : []); ensureIds();
     FILE_HANDLE = h;
     try { localStorage.setItem(LS, JSON.stringify(BUILDS)); } catch (e) { }
-    storeStatus(); renderCompare(); toast(`${BUILDS.length}개 불러왔습니다 · 이제 자동 저장됩니다`);
+    storeStatus(); updateSaveUI(); renderCompare(); toast(`${BUILDS.length}개 불러왔습니다 · 이제 자동 저장됩니다`);
   } catch (e) { if (e && e.name !== 'AbortError') toast('저장 파일을 읽지 못했습니다 — JSON 형식을 확인하세요'); }
 }
 function storeStatus() {
@@ -1333,7 +1375,7 @@ function renderCompare() {
           <button class="btn sm dg" data-del="${x.i}">삭제</button></div></td></tr>`).join('')}</tbody></table>`;
   box.querySelectorAll('[data-load]').forEach(b => b.onclick = e => {
     const b = BUILDS[+e.target.dataset.load];
-    restore(b); CUR_ID = b.id; updateSaveUI(); go('set'); toast(`「${b.name}」을 불러왔습니다 — 고친 뒤 덮어쓰기로 저장됩니다`);
+    restore(b); CUR_ID = b.id; updateSaveUI(); go('set'); toast(`「${b.name}」을 불러왔습니다`);
   });
   box.querySelectorAll('[data-over]').forEach(b => b.onclick = e => {
     const t = BUILDS[+e.target.dataset.over];
@@ -1634,14 +1676,9 @@ function boot() {
 
   $('#btn-save').onclick = () => {
     const b = curBuild();
-    if (!b) { saveAsNew(`세팅 ${BUILDS.length + 1}`); updateSaveUI(); return; }
-    overwriteBuild(b); updateSaveUI();
-    toast(`「${b.name}」에 덮어썼습니다${FILE_HANDLE ? ' (파일에도 기록)' : ''}`);
-  };
-  $('#btn-save-new').onclick = () => {
-    const b = curBuild();
     saveAsNew(b ? `${b.name} 2` : `세팅 ${BUILDS.length + 1}`); updateSaveUI();
   };
+  $('#btn-over').onclick = openOverwrite;
   $('#btn-export').onclick = () => {
     const blob = new Blob([JSON.stringify({ v: 2, builds: BUILDS.length ? BUILDS : [snapshot('현재 세팅')] }, null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1654,7 +1691,7 @@ function boot() {
     rd.onload = () => { try {
       const j = JSON.parse(rd.result), arr = j.builds || (Array.isArray(j) ? j : [j]);
       BUILDS = BUILDS.concat(arr.map(b => ({ ...b, id: newBid() }))); saveB(BUILDS); storeStatus();
-      toast(`${arr.length}개 불러왔습니다`); go('cmp');
+      updateSaveUI(); toast(`${arr.length}개 불러왔습니다`); go('cmp');
     } catch (err) { toast('파일을 읽지 못했습니다'); } };
     rd.readAsText(f); e.target.value = '';
   };

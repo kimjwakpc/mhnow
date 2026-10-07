@@ -93,8 +93,11 @@ select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
 .btn.gh{background:none;border-color:transparent;color:var(--dim);padding:5px 8px}
 .btn.gh:hover{color:var(--txt);background:var(--panel2)}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 #cur-build b{color:var(--txt)}
-#cur-build .clr{margin-left:6px;color:var(--dim2);cursor:pointer;text-decoration:underline;white-space:nowrap}
+.ow-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.ow-list .pitem .tx b .chip{font-size:10px;vertical-align:1px}
+.ow-list .pitem .st span{font-weight:700}
 
 /* ---------- 결과 패널 ---------- */
 .res .body{padding:16px 15px}
