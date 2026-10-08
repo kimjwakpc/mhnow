@@ -68,7 +68,7 @@ const SKILL_CFG = {
   DEATHGARON:                 { g:'CRIT', i:0, s:0.01, corr:0.7 }, // 견인불발
   MORPH_ATTACK_BOOST:         { g:'G', i:0, s:0.01, corr:1,        // 변형 공격 강화
                                 also:[{ g:'CRIT', i:1, s:0.01, corr:1 }] },
-  POWERHOUSE_CRITICAL:        { g:'CRIT', i:0, s:0.01, corr:1 },   // 공격 증강【회심】
+  POWERHOUSE_CRITICAL:        { g:'B', i:0, s:1, corr:1, perCrit:true },  // 공격 증강【회심】 — 무기 회심률(기본+스타일) 1%당 공격력 +8
 
   // ---- 회심 배율 ----
   CRITICAL_BOOST:             { g:'CRIT_MULT', i:0, s:0.01, corr:1 },  // 슈퍼회심
@@ -223,6 +223,12 @@ function calcDamage(p) {
 
   const CFG = (typeof window !== 'undefined' && window.__CFG__) || SKILL_CFG;
 
+  // 스타일 강화 — 무기 기본 수치(공격 · 속성 · 회심)를 올린다. 그래서 연격 · 공격·경지 같은 % 스킬(A·C 군)이
+  // 스타일 몫에도 곱해지고, 공격 증강【회심】은 스타일 회심까지 포함한 무기 회심률로 계산된다.
+  const stb = styleBonus(p.style, p.weaponId);
+  const crit0 = Number(p.critical) || 0;
+  const wCrit = crit0 + stb.crit;            // 무기 회심률 (스타일 포함, 0.2 = 20%)
+
   function apply(kind, lv, cfg) {
     const def = S[kind];
     if (!def || lv < 1) return;
@@ -230,6 +236,7 @@ function calcDamage(p) {
     if (!L) return;
     let raw = (L.eff[cfg.i] ?? 0) * cfg.s;
     if (cfg.hicharge) raw = (L.eff[1] ?? 0) * (110 + hpVal);
+    if (cfg.perCrit) raw = (L.eff[cfg.i] ?? 0) * Math.max(0, Math.round(wCrit * 1000) / 10);   // 무기 회심 1%당 N
     // 속성 특화 스킬은 무기 속성이 일치할 때만
     if (cfg.elem && cfg.elem !== p.weaponElem) return;
     const c = corrOv[kind] ?? cfg.corr;
@@ -237,7 +244,8 @@ function calcDamage(p) {
     if (MULT_GROUPS.has(cfg.g)) mul[cfg.g] *= (1 + val);   // 같은 군끼리 곱연산
     else acc[cfg.g] += val;
     contrib.push({ kind, name: def.name, lv, group: cfg.g, raw, corr: c, val,
-                   mult: MULT_GROUPS.has(cfg.g) });
+                   mult: MULT_GROUPS.has(cfg.g),
+                   perCrit: cfg.perCrit ? { pct: Math.max(0, Math.round(wCrit * 1000) / 10), per: L.eff[cfg.i] ?? 0 } : null });
   }
 
   for (const [kind, lv] of Object.entries(sk)) {
@@ -256,10 +264,6 @@ function calcDamage(p) {
     (cfg.also || []).forEach(sub => apply(kind, lv, sub));
   }
 
-  // 스타일 강화 — 무기 기본 수치를 올린다. 그래서 연격 · 공격·경지 같은 % 스킬(A·C 군)이 스타일 몫에도 곱해진다.
-  // (공격 +N 같은 가산 스킬(B·D 군)은 기본 수치와 무관). 회심은 원래 합산이라 그대로 더한다.
-  const stb = styleBonus(p.style, p.weaponId);
-  acc.CRIT += stb.crit;
 
   // 곱연산 그룹 → 표시·계산용 실효 증가율로 환산  (1.10×1.10 → 0.21)
   acc.E = mul.E - 1;
@@ -270,7 +274,7 @@ function calcDamage(p) {
   const ele = ele0 + stb.ele;                // 스타일 적용 무기 속성
 
   // 총회심률
-  const critTotal = (Number(p.critical) || 0) + acc.CRIT;
+  const critTotal = wCrit + acc.CRIT;
 
   const totalAtk = (atk + atk * acc.A + acc.B) * (1 + acc.F);
   const totalEleBase = (c_extra) => (ele + ele * (acc.C + c_extra) + acc.D) * (1 + acc.E);
@@ -300,8 +304,8 @@ function calcDamage(p) {
 
   return {
     acc, mul, contrib, blocked, critTotal, style: stb,
-    base: { atk: atk0, ele: ele0, crit: Number(p.critical) || 0 },
-    wpn: { atk, ele },                       // 스타일까지 더한 무기 기본 수치 — 이 값에 A·C 군 % 가 곱해진다
+    base: { atk: atk0, ele: ele0, crit: crit0 },
+    wpn: { atk, ele, crit: wCrit },                       // 스타일까지 더한 무기 기본 수치 — 이 값에 A·C 군 % 가 곱해진다
     totalAtk,
     totalEle: totalEleBase(0),
     totalEleCrit: totalEleBase(acc.CRIT_ELEM),

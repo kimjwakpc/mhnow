@@ -1054,7 +1054,7 @@ function renderCalc(r, ws) {
     if (!rows.length) return `<tr><th>${GROUP_LABEL[g]}</th><td colspan="2" class="note">없음</td>
       <td class="n">${isMul ? '×1' : '0'}</td></tr>`;
     const detail = rows.map(c =>
-      `${esc(c.name)} Lv${c.lv} ${n4(c.raw)}${c.corr !== 1 ? `×${c.corr}` : ''}=${n4(c.val)}`).join(isMul ? ' , ' : ' + ');
+      `${esc(c.name)} Lv${c.lv} ${c.perCrit ? `(무기 회심 ${n4(c.perCrit.pct)}% × ${c.perCrit.per}) ` : ''}${n4(c.raw)}${c.corr !== 1 ? `×${c.corr}` : ''}=${n4(c.val)}`).join(isMul ? ' , ' : ' + ');
     const total = isMul
       ? rows.map(c => `(1+${n4(c.val)})`).join('×') + ` = ×${n4(r.mul[g])}`
       : `= ${n4(g === 'B' || g === 'D' ? r.acc[g] : r.acc[g])}`;
@@ -1076,8 +1076,8 @@ function renderCalc(r, ws) {
   <table style="margin-bottom:10px">
     <tr><th style="width:150px">무기 기본</th><td>공격 <b>${fmt(b.atk)}</b> · 속성 <b>${fmt(b.ele)}</b> · 회심 <b>${(b.crit * 100).toFixed(0)}%</b></td></tr>
     ${(st.atk || st.ele || st.crit) ? `<tr><th>스타일 강화</th><td>공 +${fmt(st.atk)} · 속 +${fmt(st.ele)} · 회 +${(st.crit * 100).toFixed(0)}%</td></tr>
-    <tr><th>스타일 적용 기본</th><td>공격 <b>${fmt(wb.atk)}</b> · 속성 <b>${fmt(wb.ele)}</b>
-      <span class="note">— 스타일은 무기 기본 수치를 올리므로 % 스킬(A · C 군)이 이 값에 곱해집니다</span></td></tr>` : ''}
+    <tr><th>스타일 적용 기본</th><td>공격 <b>${fmt(wb.atk)}</b> · 속성 <b>${fmt(wb.ele)}</b> · 회심 <b>${(wb.crit * 100).toFixed(0)}%</b>
+      <span class="note">— 스타일은 무기 기본 수치를 올리므로 % 스킬(A · C 군)이 이 값에 곱해지고, 공격 증강【회심】도 이 회심률로 계산됩니다</span></td></tr>` : ''}
   </table>
 
   <div class="lbl" style="margin:12px 0 5px">그룹별 합계</div>
@@ -1091,7 +1091,7 @@ function renderCalc(r, ws) {
     <tr><th>총 속성</th><td>
       (${fmt(wb.ele)} + ${fmt(wb.ele)}×${n4(C)} + ${n4(Dd)}) × ${n4(mE)}
       = <b>${fmt(r.totalEle, 2)}</b></td></tr>
-    <tr><th>총 회심률</th><td>${(b.crit * 100).toFixed(1)}%
+    <tr><th>총 회심률</th><td>${(wb.crit * 100).toFixed(1)}%
       ${r.acc.CRIT >= 0 ? '+' : '−'} ${Math.abs(r.acc.CRIT * 100).toFixed(1)}%
       = <b style="color:${r.critTotal < 0 ? 'var(--bad)' : 'var(--good)'}">${(r.critTotal * 100).toFixed(1)}%</b></td></tr>
   </table>
