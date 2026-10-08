@@ -314,6 +314,16 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent}
 .tip-lv.ov{color:var(--bad)}
 .tip-desc{color:var(--dim);font-size:11.5px}
 .tip-dim{color:var(--dim)}
+.ammo-sum{display:flex;flex-wrap:wrap;gap:4px 16px;margin-bottom:8px;font-size:12px;color:var(--dim)}
+.ammo-sum b{color:var(--txt)}
+.ammo-wrap{overflow-x:auto}
+.ammo-tbl td,.ammo-tbl th{white-space:nowrap}
+.ammo-tbl .dim{color:var(--dim2)}
+.ammo-tbl s.dim{text-decoration:line-through}
+.ammo-tbl .up,.ammo-sum .up{color:var(--good);font-weight:700}
+.ammo-tbl .stps{display:flex;gap:3px;flex-wrap:nowrap}
+.ammo-tbl .stp{padding:0 6px;border-radius:5px;background:#10151b;border:1px solid #232c36;color:var(--dim);font-size:10.5px;font-variant-numeric:tabular-nums}
+.ammo-tbl .stp.on{color:#0d1a10;background:var(--good);border-color:var(--good);font-weight:800}
 .tip-ammo{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .tip-ammo .tip-dim{font-size:11px}
 .tip-ok{color:var(--good)}
@@ -876,6 +886,33 @@ function ailmentChance(elem, skills) {
   return { base, parts, normal, sneak, back: Math.min(1, normal + (sneak ? sneak.v : 0)) };
 }
 
+/* ---- 보우건 반동 · 리로드 — 반동 경감 / 장전 속도 스킬 (mhn.quest 와 같은 규칙) ----
+   단계  반동: 0 소 · 1 중 · 2 대 · 3 특대 · 4 용격     리로드: 0 빠름 · 1 보통 · 2 조금 느림 · 3 느림
+   스킬 Lv(최대 3)를 더한 점수로 새 단계를 찾는다:
+     점수 = [10, 9, 7, 4, 0][단계] + 스킬Lv  →  [4,4,4,4,3,3,3,2,2,1,0,0,0,0][점수]
+     예) 대(2) → Lv1 대 · Lv2 중 · Lv3 소        특대(3) → Lv3 에서 대
+   헤비보우건 예외: 대/조금 느림(2) 에서 Lv3 일 때 확산탄 · 철갑유탄 · 관통탄, 용격탄(장전 2 이상),
+   산탄(장전 7 이상), 참렬탄(리로드만) 은 소/빠름(0) 이 아니라 중/보통(1) 까지만 내려간다. */
+const RECOIL_STEPS = ['소', '중', '대', '특대', '용격'];
+const RELOAD_STEPS = ['빠름', '보통', '조금 느림', '느림'];
+function bowgunStep(level, skillLv, kind, heavy, ammoCat, num) {
+  const e = Math.max(0, Math.min(3, skillLv | 0));
+  if (e === 0 || level == null || level < 0) return level;
+  if (heavy && level === 2 && e === 3 && (['cluster', 'sticky', 'pierce'].includes(ammoCat)
+      || (ammoCat === 'wyvern' && num >= 2) || (ammoCat === 'spread' && num >= 7)
+      || (ammoCat === 'slicing' && kind === 'reload'))) return 1;
+  return [4, 4, 4, 4, 3, 3, 3, 2, 2, 1, 0, 0, 0, 0][[10, 9, 7, 4, 0][level] + e];
+}
+/* 스킬 Lv 0~3 에서 단계가 바뀌는 지점만 — [{ lv, step }] (첫 칸은 Lv0 = 원래 단계) */
+function bowgunLadder(level, kind, heavy, ammoCat, num) {
+  const out = [{ lv: 0, step: level }];
+  for (let e = 1; e <= 3; e++) {
+    const st = bowgunStep(level, e, kind, heavy, ammoCat, num);
+    if (st !== out[out.length - 1].step) out.push({ lv: e, step: st });
+  }
+  return out;
+}
+
 /* ---- 자체 검증 ---- */
 function _selfTest(SKILLS) {
   const r = calcDamage({
@@ -890,7 +927,7 @@ function _selfTest(SKILLS) {
   return { pass, got: { critTotal: r.critTotal, ...r.parts, final: r.finalDmg }, exp };
 }
 
-if (typeof module !== 'undefined') module.exports = { calcDamage, ailmentChance, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };
+if (typeof module !== 'undefined') module.exports = { calcDamage, ailmentChance, bowgunStep, bowgunLadder, RECOIL_STEPS, RELOAD_STEPS, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };
 </script>
 <script>/* ============ 몬헌 나우 장비 세팅 — UI ============ */
 const D = window.__DATA__;
@@ -1354,6 +1391,40 @@ function specShort(w) {
   if (s.list) return s.list.join(', ');
   return s.text || '';
 }
+/* 탄종 표 — 반동 경감 · 장전 속도 Lv 별로 반동/리로드가 어떻게 줄어드는지 (engine.js bowgunStep) */
+const AMMO_CAT = { 관통탄: 'pierce', 산탄: 'spread', 확산탄: 'cluster', 참렬탄: 'slicing', 철갑유탄: 'sticky', 용격탄: 'wyvern' };
+function ammoTable(w, s) {
+  const cap = aggregate().capped, heavy = w.cat === 'HEAVY_BOWGUN';
+  const have = { recoil: Math.min(3, cap.RECOIL_DOWN || 0), reload: Math.min(3, cap.RELOAD_SPEED || 0) };
+  const need = { recoil: 0, reload: 0 };
+  const cell = (r, kind) => {
+    const names = kind === 'recoil' ? RECOIL_STEPS : RELOAD_STEPS;
+    const lv0 = names.indexOf(r[kind === 'recoil' ? 'r' : 'l']);
+    if (lv0 < 0) return [`<td>${esc(r[kind === 'recoil' ? 'r' : 'l'] || '—')}</td>`, '<td class="dim">—</td>'];
+    const lad = bowgunLadder(lv0, kind, heavy, AMMO_CAT[ammoBase(r.n)] || 'normal', +r.c || 0);
+    if (lad.length > 1) need[kind] = Math.max(need[kind], lad[lad.length - 1].lv);
+    const now = bowgunStep(lv0, have[kind], kind, heavy, AMMO_CAT[ammoBase(r.n)] || 'normal', +r.c || 0);
+    const cur = now === lv0 ? esc(names[lv0])
+      : `<s class="dim">${esc(names[lv0])}</s> → <b class="up">${esc(names[now])}</b>`;
+    const steps = lad.length > 1 ? lad.slice(1).map(x =>
+      `<span class="stp${have[kind] >= x.lv ? ' on' : ''}">Lv${x.lv} ${esc(names[x.step])}</span>`).join('') : '<span class="dim">효과 없음</span>';
+    return [`<td>${cur}</td>`, `<td><div class="stps">${steps}</div></td>`];
+  };
+  const rows = s.rows.map(r => {
+    const [rc, rs] = cell(r, 'recoil'), [lc, ls] = cell(r, 'reload');
+    return `<tr><td>${r.color ? `<span class="dot" style="background:${esc(r.color)};margin-right:6px"></span>` : ''}${esc(r.n)}</td>
+      <td class="n">${esc(r.c)}</td>${rc}${rs}${lc}${ls}</tr>`;
+  }).join('');
+  const sum = k => need[k] ? `Lv${need[k]}${have[k] >= need[k] ? ' <span class="up">충족</span>' : ''}` : '<span class="dim">필요 없음</span>';
+  return `<div class="ammo-sum">
+      <span>반동 경감 <b>Lv${have.recoil}</b> · 최대 효과 ${sum('recoil')}</span>
+      <span>장전 속도 <b>Lv${have.reload}</b> · 최대 효과 ${sum('reload')}</span></div>
+    <div class="ammo-wrap"><table class="ammo-tbl"><thead><tr><th>탄종</th><th class="n">장전수</th>
+      <th>반동</th><th title="반동 경감 Lv 별로 반동이 바뀌는 지점">반동 경감</th>
+      <th>리로드</th><th title="장전 속도 Lv 별로 리로드가 바뀌는 지점">장전 속도</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <div class="note" style="margin-top:6px">반동 · 리로드 칸은 지금 스킬을 적용한 값입니다. 오른쪽 칸은 그 단계가 되려면 필요한 스킬 Lv (초록 = 지금 충족). 최대 효과 = 이 무기의 탄 전부가 더 줄지 않는 Lv.</div>`;
+}
 function renderSpec(w) {
   const box = $('#spec-box'), card = $('#card-spec');
   const s = w && w.spec;
@@ -1361,10 +1432,7 @@ function renderSpec(w) {
   card.classList.remove('hide');
   $('#spec-label').textContent = s.label;
   if (s.kind === 'AMMO') {
-    box.innerHTML = `<table><thead><tr><th>탄종</th><th class="n">장전수</th><th>반동</th><th>리로드</th></tr></thead>
-      <tbody>${s.rows.map(r => `<tr>
-        <td>${r.color ? `<span class="dot" style="background:${esc(r.color)};margin-right:6px"></span>` : ''}${esc(r.n)}</td>
-        <td class="n">${esc(r.c)}</td><td>${esc(r.r)}</td><td>${esc(r.l)}</td></tr>`).join('')}</tbody></table>`;
+    box.innerHTML = ammoTable(w, s);
   } else if (s.list) {
     box.innerHTML = s.list.length
       ? s.list.map(x => `<span class="chip a" style="margin:0 4px 4px 0">${esc(x)}</span>`).join('')
@@ -1849,6 +1917,7 @@ function render() {
     $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); return;
   }
   const r = calc(ws, agg);
+  if (W_BY_ID[S.w.id]?.spec?.kind === 'AMMO') renderSpec(W_BY_ID[S.w.id]);
   renderSkills(agg, r.blocked);
   renderCalc(r, ws);
   $('#res-final').textContent = fmt(r.finalDmg, 1);

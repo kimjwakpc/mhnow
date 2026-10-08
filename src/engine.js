@@ -335,6 +335,33 @@ function ailmentChance(elem, skills) {
   return { base, parts, normal, sneak, back: Math.min(1, normal + (sneak ? sneak.v : 0)) };
 }
 
+/* ---- 보우건 반동 · 리로드 — 반동 경감 / 장전 속도 스킬 (mhn.quest 와 같은 규칙) ----
+   단계  반동: 0 소 · 1 중 · 2 대 · 3 특대 · 4 용격     리로드: 0 빠름 · 1 보통 · 2 조금 느림 · 3 느림
+   스킬 Lv(최대 3)를 더한 점수로 새 단계를 찾는다:
+     점수 = [10, 9, 7, 4, 0][단계] + 스킬Lv  →  [4,4,4,4,3,3,3,2,2,1,0,0,0,0][점수]
+     예) 대(2) → Lv1 대 · Lv2 중 · Lv3 소        특대(3) → Lv3 에서 대
+   헤비보우건 예외: 대/조금 느림(2) 에서 Lv3 일 때 확산탄 · 철갑유탄 · 관통탄, 용격탄(장전 2 이상),
+   산탄(장전 7 이상), 참렬탄(리로드만) 은 소/빠름(0) 이 아니라 중/보통(1) 까지만 내려간다. */
+const RECOIL_STEPS = ['소', '중', '대', '특대', '용격'];
+const RELOAD_STEPS = ['빠름', '보통', '조금 느림', '느림'];
+function bowgunStep(level, skillLv, kind, heavy, ammoCat, num) {
+  const e = Math.max(0, Math.min(3, skillLv | 0));
+  if (e === 0 || level == null || level < 0) return level;
+  if (heavy && level === 2 && e === 3 && (['cluster', 'sticky', 'pierce'].includes(ammoCat)
+      || (ammoCat === 'wyvern' && num >= 2) || (ammoCat === 'spread' && num >= 7)
+      || (ammoCat === 'slicing' && kind === 'reload'))) return 1;
+  return [4, 4, 4, 4, 3, 3, 3, 2, 2, 1, 0, 0, 0, 0][[10, 9, 7, 4, 0][level] + e];
+}
+/* 스킬 Lv 0~3 에서 단계가 바뀌는 지점만 — [{ lv, step }] (첫 칸은 Lv0 = 원래 단계) */
+function bowgunLadder(level, kind, heavy, ammoCat, num) {
+  const out = [{ lv: 0, step: level }];
+  for (let e = 1; e <= 3; e++) {
+    const st = bowgunStep(level, e, kind, heavy, ammoCat, num);
+    if (st !== out[out.length - 1].step) out.push({ lv: e, step: st });
+  }
+  return out;
+}
+
 /* ---- 자체 검증 ---- */
 function _selfTest(SKILLS) {
   const r = calcDamage({
@@ -349,4 +376,4 @@ function _selfTest(SKILLS) {
   return { pass, got: { critTotal: r.critTotal, ...r.parts, final: r.finalDmg }, exp };
 }
 
-if (typeof module !== 'undefined') module.exports = { calcDamage, ailmentChance, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };
+if (typeof module !== 'undefined') module.exports = { calcDamage, ailmentChance, bowgunStep, bowgunLadder, RECOIL_STEPS, RELOAD_STEPS, SKILL_CFG, GROUP_LABEL, MULT_GROUPS, secretReqs, styleBonus, styleProfile, _selfTest };

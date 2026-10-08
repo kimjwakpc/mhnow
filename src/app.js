@@ -460,6 +460,40 @@ function specShort(w) {
   if (s.list) return s.list.join(', ');
   return s.text || '';
 }
+/* 탄종 표 — 반동 경감 · 장전 속도 Lv 별로 반동/리로드가 어떻게 줄어드는지 (engine.js bowgunStep) */
+const AMMO_CAT = { 관통탄: 'pierce', 산탄: 'spread', 확산탄: 'cluster', 참렬탄: 'slicing', 철갑유탄: 'sticky', 용격탄: 'wyvern' };
+function ammoTable(w, s) {
+  const cap = aggregate().capped, heavy = w.cat === 'HEAVY_BOWGUN';
+  const have = { recoil: Math.min(3, cap.RECOIL_DOWN || 0), reload: Math.min(3, cap.RELOAD_SPEED || 0) };
+  const need = { recoil: 0, reload: 0 };
+  const cell = (r, kind) => {
+    const names = kind === 'recoil' ? RECOIL_STEPS : RELOAD_STEPS;
+    const lv0 = names.indexOf(r[kind === 'recoil' ? 'r' : 'l']);
+    if (lv0 < 0) return [`<td>${esc(r[kind === 'recoil' ? 'r' : 'l'] || '—')}</td>`, '<td class="dim">—</td>'];
+    const lad = bowgunLadder(lv0, kind, heavy, AMMO_CAT[ammoBase(r.n)] || 'normal', +r.c || 0);
+    if (lad.length > 1) need[kind] = Math.max(need[kind], lad[lad.length - 1].lv);
+    const now = bowgunStep(lv0, have[kind], kind, heavy, AMMO_CAT[ammoBase(r.n)] || 'normal', +r.c || 0);
+    const cur = now === lv0 ? esc(names[lv0])
+      : `<s class="dim">${esc(names[lv0])}</s> → <b class="up">${esc(names[now])}</b>`;
+    const steps = lad.length > 1 ? lad.slice(1).map(x =>
+      `<span class="stp${have[kind] >= x.lv ? ' on' : ''}">Lv${x.lv} ${esc(names[x.step])}</span>`).join('') : '<span class="dim">효과 없음</span>';
+    return [`<td>${cur}</td>`, `<td><div class="stps">${steps}</div></td>`];
+  };
+  const rows = s.rows.map(r => {
+    const [rc, rs] = cell(r, 'recoil'), [lc, ls] = cell(r, 'reload');
+    return `<tr><td>${r.color ? `<span class="dot" style="background:${esc(r.color)};margin-right:6px"></span>` : ''}${esc(r.n)}</td>
+      <td class="n">${esc(r.c)}</td>${rc}${rs}${lc}${ls}</tr>`;
+  }).join('');
+  const sum = k => need[k] ? `Lv${need[k]}${have[k] >= need[k] ? ' <span class="up">충족</span>' : ''}` : '<span class="dim">필요 없음</span>';
+  return `<div class="ammo-sum">
+      <span>반동 경감 <b>Lv${have.recoil}</b> · 최대 효과 ${sum('recoil')}</span>
+      <span>장전 속도 <b>Lv${have.reload}</b> · 최대 효과 ${sum('reload')}</span></div>
+    <div class="ammo-wrap"><table class="ammo-tbl"><thead><tr><th>탄종</th><th class="n">장전수</th>
+      <th>반동</th><th title="반동 경감 Lv 별로 반동이 바뀌는 지점">반동 경감</th>
+      <th>리로드</th><th title="장전 속도 Lv 별로 리로드가 바뀌는 지점">장전 속도</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <div class="note" style="margin-top:6px">반동 · 리로드 칸은 지금 스킬을 적용한 값입니다. 오른쪽 칸은 그 단계가 되려면 필요한 스킬 Lv (초록 = 지금 충족). 최대 효과 = 이 무기의 탄 전부가 더 줄지 않는 Lv.</div>`;
+}
 function renderSpec(w) {
   const box = $('#spec-box'), card = $('#card-spec');
   const s = w && w.spec;
@@ -467,10 +501,7 @@ function renderSpec(w) {
   card.classList.remove('hide');
   $('#spec-label').textContent = s.label;
   if (s.kind === 'AMMO') {
-    box.innerHTML = `<table><thead><tr><th>탄종</th><th class="n">장전수</th><th>반동</th><th>리로드</th></tr></thead>
-      <tbody>${s.rows.map(r => `<tr>
-        <td>${r.color ? `<span class="dot" style="background:${esc(r.color)};margin-right:6px"></span>` : ''}${esc(r.n)}</td>
-        <td class="n">${esc(r.c)}</td><td>${esc(r.r)}</td><td>${esc(r.l)}</td></tr>`).join('')}</tbody></table>`;
+    box.innerHTML = ammoTable(w, s);
   } else if (s.list) {
     box.innerHTML = s.list.length
       ? s.list.map(x => `<span class="chip a" style="margin:0 4px 4px 0">${esc(x)}</span>`).join('')
@@ -955,6 +986,7 @@ function render() {
     $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); return;
   }
   const r = calc(ws, agg);
+  if (W_BY_ID[S.w.id]?.spec?.kind === 'AMMO') renderSpec(W_BY_ID[S.w.id]);
   renderSkills(agg, r.blocked);
   renderCalc(r, ws);
   $('#res-final').textContent = fmt(r.finalDmg, 1);
