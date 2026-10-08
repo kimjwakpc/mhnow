@@ -256,16 +256,18 @@ function calcDamage(p) {
     (cfg.also || []).forEach(sub => apply(kind, lv, sub));
   }
 
-  // 스타일 강화
+  // 스타일 강화 — 무기 기본 수치를 올린다. 그래서 연격 · 공격·경지 같은 % 스킬(A·C 군)이 스타일 몫에도 곱해진다.
+  // (공격 +N 같은 가산 스킬(B·D 군)은 기본 수치와 무관). 회심은 원래 합산이라 그대로 더한다.
   const stb = styleBonus(p.style, p.weaponId);
-  acc.B += stb.atk; acc.D += stb.ele; acc.CRIT += stb.crit;
+  acc.CRIT += stb.crit;
 
   // 곱연산 그룹 → 표시·계산용 실효 증가율로 환산  (1.10×1.10 → 0.21)
   acc.E = mul.E - 1;
   acc.F = mul.F - 1;
 
-  const atk = Number(p.attack) || 0;
-  const ele = Number(p.element) || 0;
+  const atk0 = Number(p.attack) || 0, ele0 = Number(p.element) || 0;
+  const atk = atk0 + stb.atk;                // 스타일 적용 무기 공격력
+  const ele = ele0 + stb.ele;                // 스타일 적용 무기 속성
 
   // 총회심률
   const critTotal = (Number(p.critical) || 0) + acc.CRIT;
@@ -298,7 +300,8 @@ function calcDamage(p) {
 
   return {
     acc, mul, contrib, blocked, critTotal, style: stb,
-    base: { atk, ele, crit: Number(p.critical) || 0 },
+    base: { atk: atk0, ele: ele0, crit: Number(p.critical) || 0 },
+    wpn: { atk, ele },                       // 스타일까지 더한 무기 기본 수치 — 이 값에 A·C 군 % 가 곱해진다
     totalAtk,
     totalEle: totalEleBase(0),
     totalEleCrit: totalEleBase(acc.CRIT_ELEM),

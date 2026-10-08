@@ -1064,7 +1064,7 @@ function renderCalc(r, ws) {
 
   const A = r.acc.A, B = r.acc.B, C = r.acc.C, Dd = r.acc.D, G = r.acc.G;
   const mF = r.mul.F, mE = r.mul.E;
-  const b = r.base, st = r.style;
+  const b = r.base, st = r.style, wb = r.wpn;
   const w = r.weights, p = r.parts;
 
   const blockHtml = r.blocked.length ? `<div class="warn" style="margin-bottom:10px">
@@ -1075,7 +1075,9 @@ function renderCalc(r, ws) {
   box.innerHTML = blockHtml + `
   <table style="margin-bottom:10px">
     <tr><th style="width:150px">무기 기본</th><td>공격 <b>${fmt(b.atk)}</b> · 속성 <b>${fmt(b.ele)}</b> · 회심 <b>${(b.crit * 100).toFixed(0)}%</b></td></tr>
-    ${(st.atk || st.ele || st.crit) ? `<tr><th>스타일 강화</th><td>공 +${fmt(st.atk)} · 속 +${fmt(st.ele)} · 회 +${(st.crit * 100).toFixed(0)}%</td></tr>` : ''}
+    ${(st.atk || st.ele || st.crit) ? `<tr><th>스타일 강화</th><td>공 +${fmt(st.atk)} · 속 +${fmt(st.ele)} · 회 +${(st.crit * 100).toFixed(0)}%</td></tr>
+    <tr><th>스타일 적용 기본</th><td>공격 <b>${fmt(wb.atk)}</b> · 속성 <b>${fmt(wb.ele)}</b>
+      <span class="note">— 스타일은 무기 기본 수치를 올리므로 % 스킬(A · C 군)이 이 값에 곱해집니다</span></td></tr>` : ''}
   </table>
 
   <div class="lbl" style="margin:12px 0 5px">그룹별 합계</div>
@@ -1084,10 +1086,10 @@ function renderCalc(r, ws) {
   <div class="lbl" style="margin:14px 0 5px">단계별 계산</div>
   <table class="calcsteps">
     <tr><th>총 공격력</th><td>
-      (${fmt(b.atk)} + ${fmt(b.atk)}×${n4(A)} + ${n4(B)}) × ${n4(mF)}
+      (${fmt(wb.atk)} + ${fmt(wb.atk)}×${n4(A)} + ${n4(B)}) × ${n4(mF)}
       = <b>${fmt(r.totalAtk, 2)}</b></td></tr>
     <tr><th>총 속성</th><td>
-      (${fmt(b.ele)} + ${fmt(b.ele)}×${n4(C)} + ${n4(Dd)}) × ${n4(mE)}
+      (${fmt(wb.ele)} + ${fmt(wb.ele)}×${n4(C)} + ${n4(Dd)}) × ${n4(mE)}
       = <b>${fmt(r.totalEle, 2)}</b></td></tr>
     <tr><th>총 회심률</th><td>${(b.crit * 100).toFixed(1)}%
       ${r.acc.CRIT >= 0 ? '+' : '−'} ${Math.abs(r.acc.CRIT * 100).toFixed(1)}%
