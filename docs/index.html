@@ -517,7 +517,7 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent}
         <div style="flex:0 0 170px"><select id="dx-cat"></select></div>
         <div style="flex:0 0 170px"><select id="dx-elem"></select></div>
         <div style="flex:0 0 170px"><select id="dx-sort"><option value="">기본 정렬</option><option value="atk">공격력순</option><option value="ele">속성값순</option><option value="crit">회심률순</option></select></div>
-        <div><input type="text" id="dx-q" placeholder="이름 · 세트 · 스킬 검색"></div>
+        <div><input type="text" id="dx-q" placeholder="이름 · 세트 · 몬스터 · 스킬 검색"></div>
       </div>
       <div style="max-height:70vh;overflow:auto" id="dx-box"></div>
     </div>
@@ -1182,7 +1182,7 @@ function openPicker(cfg) {
   const d2 = document.createElement('div'); d2.className = 'fset';
   d2.innerHTML = `<div class="lbl">스킬 · 이름</div><div class="row">
     <div><select id="mo-skill"></select></div>
-    <div><input type="text" id="mo-q" placeholder="이름 · 탄종 · 선율 검색"></div></div>`;
+    <div><input type="text" id="mo-q" placeholder="이름 · 몬스터 · 탄종 · 선율 검색"></div></div>`;
   fb.prepend(d2);          // 가장 많이 쓰는 칸이라 맨 위로 — 폰에서 아이콘 그리드에 묻히지 않게
   /* 스킬 목록은 「지금 고를 수 있는 것」만 — 무기는 72종만 가지고 있어서 전체 136종을 늘어놓으면
      절반 이상이 눌러도 0개가 나온다. 무기 종류를 고르면 거기에 있는 스킬로 한 번 더 좁힌다. */
@@ -1200,7 +1200,7 @@ function openPicker(cfg) {
   // 기억한 세트가 이 목록에 없으면 paintSeries 가 해제한다
   $('#mo-q').value = f.qRaw || '';
   $('#mo-skill').onchange = e => { f.skill = e.target.value; draw(); };
-  $('#mo-q').oninput = e => { f.qRaw = e.target.value; f.q = e.target.value.trim().toLowerCase(); draw(); };
+  $('#mo-q').oninput = e => { f.qRaw = e.target.value; f.q = qNorm(e.target.value); draw(); };
 
   function paintFilters() {
     paintSeries(); paintSkillSel();
@@ -1240,6 +1240,11 @@ function openPicker(cfg) {
    탄종은 속성 차이를 무시하고 기본 탄종으로 묶는다.
      확산화염탄 → 확산탄 · 관통빙결탄 → 관통탄 · 빙결탄/수냉탄/멸룡탄 → 통상탄
    화살은 Lv 를 떼고(관통화살 Lv4 → 관통화살), 사냥벌레는 · 로 나눈다. */
+/* 이름 검색 — 띄어쓰기 · 하이픈 무시, 몬스터 이름(테오-테스카토르, 리오레우스 아종 …)으로도 찾는다 */
+const qNorm = s => String(s || '').toLowerCase().replace(/[\s\-·.]/g, '');
+const monName = x => (x && x.mon && MONS[x.mon]?.name) || '';
+const wHay = w => qNorm(w.final + w.base + w.series + monName(w) + specTags(w).join(' ') + specShort(w));
+const aHay = a => qNorm(a.series + a.name + monName(a) + a.skAll.map(skName).join(''));
 const AMMO_ELEM = /화염|수냉|전격|빙결|멸룡/g;
 function ammoBase(name) {
   const s = String(name).replace(/^LV\s*\d+/i, '').replace(/\s+/g, '').replace(AMMO_ELEM, '');
@@ -1312,7 +1317,7 @@ function pickWeapon() {
     match: (w, f) => (!f.cat || w.catName === f.cat) && (!f.elem || w.elem === f.elem)
       && (!f.series || w.series === f.series) && (!f.skill || w.skAll.includes(f.skill))
       && (!f.spec.length || f.spec.some(t => specTags(w).includes(t)))   // 하나만 있어도 통과 (중복 검색)
-      && (!f.q || (w.final + w.base + w.series + specTags(w).join(' ') + specShort(w)).toLowerCase().includes(f.q)),
+      && (!f.q || wHay(w).includes(f.q)),
     render: w => { const g = w.g[w.g.length - 1], L = g.lv[4];
       return `<button class="pitem ${S.w.id === w.id ? 'on' : ''}" data-pick="${w.id}" data-tip="w|${w.id}">
         <span class="ic">${w.img ? `<img loading="lazy" src="${w.img}">` : (w.icon ? `<img loading="lazy" src="${w.icon}">` : '')}</span>
@@ -1553,7 +1558,7 @@ function pickArmor(part) {
     title: PARTNAME[part] + ' 방어구 선택', items: ARMOR_BY_PART[part],
     filters: ['series'], seriesSrc: seriesList(ARMOR_BY_PART[part]), memo: 'armor',   // 부위끼리 필터 공유
     match: (a, f) => (!f.series || a.series === f.series) && (!f.skill || a.skAll.includes(f.skill))
-      && (!f.q || (a.series + a.name + a.skAll.map(skName).join('')).toLowerCase().includes(f.q)),
+      && (!f.q || aHay(a).includes(f.q)),
     render: a => { const g = a.g[a.g.length - 1];
       return `<button class="pitem ${S.a[part].id === a.id ? 'on' : ''}" data-pick="${a.id}" data-tip="a|${a.id}">
         <span class="ic">${a.icon ? `<img loading="lazy" src="${a.icon}">` : ''}</span>
@@ -1653,7 +1658,7 @@ function openArmorBulk() {
           <span class="clr" id="bk-clear">조건 전체 해제</span></div>
         <div class="row bk-srch" style="margin-bottom:7px">
           <div><input type="text" id="bk-sq" placeholder="스킬 검색 — 예: 공, 회심, 속성"></div>
-          <div><input type="text" id="bk-q" placeholder="방어구 · 세트 이름 검색"></div>
+          <div><input type="text" id="bk-q" placeholder="방어구 · 세트 · 몬스터 이름 검색"></div>
         </div>
         <div class="selskills" id="bk-sres" style="margin-bottom:7px"></div>
         <div class="selskills" id="bk-tags"></div>
@@ -1707,7 +1712,7 @@ function openArmorBulk() {
 
     // 스킬 조건과 세트 조건은 OR — 둘 중 하나라도 맞으면 남긴다. 이름 검색만 AND.
     const match = a => {
-      if (f.q && !(a.series + a.name + a.skAll.map(skName).join('')).toLowerCase().includes(f.q)) return false;
+      if (f.q && !aHay(a).includes(f.q)) return false;
       if (!f.skills.length && !f.series.length) return true;
       const skHit = f.skills.length && (f.mode === 'and'
         ? f.skills.every(k => a.skAll.includes(k)) : f.skills.some(k => a.skAll.includes(k)));
@@ -1754,7 +1759,7 @@ function openArmorBulk() {
   }
   $('#bk-sq').value = f.sqRaw || ''; $('#bk-q').value = f.qRaw || ''; $('#bk-mode').value = f.mode;
   $('#bk-sq').oninput = e => { f.sqRaw = e.target.value; f.sq = e.target.value.trim().toLowerCase(); paint(); };
-  $('#bk-q').oninput = e => { f.qRaw = e.target.value; f.q = e.target.value.trim().toLowerCase(); paint(); };
+  $('#bk-q').oninput = e => { f.qRaw = e.target.value; f.q = qNorm(e.target.value); paint(); };
   $('#bk-mode').onchange = e => { f.mode = e.target.value; paint(); };
   $('#bk-clear').onclick = () => { f.skills = []; f.series = []; f.q = ''; f.sq = ''; f.qRaw = ''; f.sqRaw = '';
     $('#bk-q').value = ''; $('#bk-sq').value = ''; paint(); };
@@ -2387,11 +2392,10 @@ function buildDex() {
   q.oninput = draw; fillCat(); draw();
 
   function draw() {
-    const box = $('#dx-box'), kw = q.value.trim().toLowerCase();
+    const box = $('#dx-box'), kw = qNorm(q.value);
     if (kind.value === 'w') {
       let list = WEAPONS.filter(w => (!cat.value || w.catName === cat.value) && (!elm.value || w.elem === elm.value)
-        && (!kw || (w.final + w.base + w.series + w.skAll.map(skName).join('')
-            + specTags(w).join(' ') + specShort(w)).toLowerCase().includes(kw)));
+        && (!kw || (wHay(w) + qNorm(w.skAll.map(skName).join(''))).includes(kw)));
       const top = w => w.g[w.g.length - 1].lv[4];
       if (sort.value) { const i = { atk: 0, ele: 1, crit: 2 }[sort.value]; list = [...list].sort((a, b) => top(b)[i] - top(a)[i]); }
       $('#dx-count').textContent = list.length + '개';
@@ -2408,7 +2412,7 @@ function buildDex() {
         </tbody></table>${list.length > 400 ? '<div class="note" style="padding:8px">상위 400개 표시 — 검색으로 좁혀보세요.</div>' : ''}`;
     } else {
       const list = ARMOR.filter(a => (!cat.value || a.cat === cat.value)
-        && (!kw || (a.series + a.name + a.skAll.map(skName).join('')).toLowerCase().includes(kw)));
+        && (!kw || aHay(a).includes(kw)));
       $('#dx-count').textContent = list.length + '개';
       box.innerHTML = `<table><thead><tr><th></th><th>세트</th><th>부위</th><th class="n">최대G</th>
         <th class="n">방어력</th><th class="n">슬롯</th><th>스킬</th></tr></thead><tbody>${
