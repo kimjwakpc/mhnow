@@ -101,6 +101,9 @@ select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 #cur-build b{color:var(--txt)}
+#bk-nres .btn.set{border-color:#5a4320;color:#f2cf8a}
+#bk-tags .tag.set{border-color:#5a4320;background:#2a2010;color:#f2cf8a}
+#bk-tags .tag.set button{color:#e0b465}
 .ow-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .ow-list .pitem .tx b .chip{font-size:10px;vertical-align:1px}
 .ow-list .pitem .st span{font-weight:700}
@@ -1252,6 +1255,11 @@ const qNorm = s => String(s || '').toLowerCase().replace(/[\s\-·.]/g, '');
 const monName = x => (x && x.mon && MONS[x.mon]?.name) || '';
 const wHay = w => qNorm(w.final + w.base + w.series + monName(w) + specTags(w).join(' ') + specShort(w));
 const aHay = a => qNorm(a.series + a.name + monName(a) + a.skAll.map(skName).join(''));
+const SERIES_HAY = {};
+function seriesHay(name) {                     // 방어구 세트 검색어 — 세트 이름 · 몬스터 이름 · 부위 이름
+  if (!SERIES_HAY[name]) SERIES_HAY[name] = qNorm(name + ARMOR.filter(a => a.series === name).map(a => a.name + monName(a)).join(''));
+  return SERIES_HAY[name];
+}
 const AMMO_ELEM = /화염|수냉|전격|빙결|멸룡/g;
 function ammoBase(name) {
   const s = String(name).replace(/^LV\s*\d+/i, '').replace(/\s+/g, '').replace(AMMO_ELEM, '');
@@ -1665,9 +1673,10 @@ function openArmorBulk() {
           <span class="clr" id="bk-clear">조건 전체 해제</span></div>
         <div class="row bk-srch" style="margin-bottom:7px">
           <div><input type="text" id="bk-sq" placeholder="스킬 검색 — 예: 공, 회심, 속성"></div>
-          <div><input type="text" id="bk-q" placeholder="방어구 · 세트 · 몬스터 이름 검색"></div>
+          <div><input type="text" id="bk-q" placeholder="세트 · 몬스터 이름 검색 — 예: 키린, 레우스"></div>
         </div>
         <div class="selskills" id="bk-sres" style="margin-bottom:7px"></div>
+        <div class="selskills" id="bk-nres" style="margin-bottom:7px"></div>
         <div class="selskills" id="bk-tags"></div>
       </div>
       <div class="fset"><div class="lbl">세트 <span class="note">(여러 개 선택 가능)</span></div>
@@ -1710,16 +1719,32 @@ function openArmorBulk() {
       });
     }
 
-    $('#bk-tags').innerHTML = f.skills.length ? f.skills.map(k =>
-      `<span class="tag">${esc(skName(k))}<button data-rm="${k}">✕</button></span>`).join('')
-      : '<span class="note">선택된 스킬 없음</span>';
+    // 세트 · 몬스터 이름 검색 결과 — 스킬처럼 눌러서 조건(세트)에 추가. 스킬 조건과 OR
+    const nres = $('#bk-nres');
+    if (!f.q) nres.innerHTML = '';
+    else {
+      const hit = A_SERIES.filter(x => !f.series.includes(x.name) && seriesHay(x.name).includes(f.q)).slice(0, 30);
+      nres.innerHTML = hit.length ? hit.map(x => { const mn = monName(x);
+        return `<button class="btn sm set" data-addser="${esc(x.name)}">＋ ${esc(x.name)}${mn && !x.name.includes(mn) ? ` <span class="note">${esc(mn)}</span>` : ''}</button>`; }).join('')
+        : '<span class="note">일치하는 세트가 없습니다.</span>';
+      nres.querySelectorAll('[data-addser]').forEach(b => b.onclick = () => {
+        f.series = [...f.series, b.dataset.addser]; paint();
+      });
+    }
+
+    $('#bk-tags').innerHTML = f.skills.length || f.series.length ? f.skills.map(k =>
+      `<span class="tag">${esc(skName(k))}<button data-rm="${k}">✕</button></span>`).join('') + f.series.map(n =>
+      `<span class="tag set">${esc(n)}<button data-rmser="${esc(n)}">✕</button></span>`).join('')
+      : '<span class="note">선택된 스킬 · 세트 없음</span>';
     $('#bk-tags').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => {
       f.skills = f.skills.filter(x => x !== b.dataset.rm); paint();
     });
+    $('#bk-tags').querySelectorAll('[data-rmser]').forEach(b => b.onclick = () => {
+      f.series = f.series.filter(x => x !== b.dataset.rmser); paint();
+    });
 
-    // 스킬 조건과 세트 조건은 OR — 둘 중 하나라도 맞으면 남긴다. 이름 검색만 AND.
+    // 스킬 조건과 세트 조건은 OR — 둘 중 하나라도 맞으면 남긴다
     const match = a => {
-      if (f.q && !aHay(a).includes(f.q)) return false;
       if (!f.skills.length && !f.series.length) return true;
       const skHit = f.skills.length && (f.mode === 'and'
         ? f.skills.every(k => a.skAll.includes(k)) : f.skills.some(k => a.skAll.includes(k)));

@@ -95,6 +95,9 @@ select.sm,input.sm{padding:5px 8px;font-size:12.5px;border-radius:7px}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 #cur-build b{color:var(--txt)}
+#bk-nres .btn.set{border-color:#5a4320;color:#f2cf8a}
+#bk-tags .tag.set{border-color:#5a4320;background:#2a2010;color:#f2cf8a}
+#bk-tags .tag.set button{color:#e0b465}
 .ow-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .ow-list .pitem .tx b .chip{font-size:10px;vertical-align:1px}
 .ow-list .pitem .st span{font-weight:700}
