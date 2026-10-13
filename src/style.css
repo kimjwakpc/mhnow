@@ -115,7 +115,6 @@ input::placeholder{color:var(--dim2)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .row{display:flex;gap:9px}
 .row>*{flex:1;min-width:0}
-.row.bk-srch>:last-child{flex:0 0 260px}
 
 .btn{background:var(--panel2);border:1px solid var(--line2);padding:8px 14px;border-radius:11px;font-weight:600;transition:.15s;
   min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
@@ -132,7 +131,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 #cur-build b{color:var(--txt)}
-#bk-nres .btn.set{border-color:var(--accent-line);color:#f2cf8a}
+#bk-sres .btn.set{border-color:var(--accent-line);color:#f2cf8a}
 #bk-tags .tag.set{border-color:var(--accent-line);background:var(--accent-soft);color:#f2cf8a}
 #bk-tags .tag.set button{color:#e0b465}
 .ow-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
@@ -551,8 +550,6 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent;h
   #mo-filters .igrid button{flex:0 0 auto}
   #mo-filters .row{flex-wrap:wrap}
   #mo-filters .row>*{flex:1 1 100%}
-  .row.bk-srch{flex-wrap:wrap;gap:7px}
-  .row.bk-srch>*,.row.bk-srch>:last-child{flex:1 1 100%}
   #bk-series{flex-wrap:nowrap;overflow-x:auto;margin:0 -14px;padding:0 14px 4px;scrollbar-width:none}
   #bk-series::-webkit-scrollbar{display:none}
   #bk-series button{flex:0 0 auto}

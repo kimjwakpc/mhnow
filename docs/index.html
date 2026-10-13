@@ -124,7 +124,6 @@ input::placeholder{color:var(--dim2)}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .row{display:flex;gap:9px}
 .row>*{flex:1;min-width:0}
-.row.bk-srch>:last-child{flex:0 0 260px}
 
 .btn{background:var(--panel2);border:1px solid var(--line2);padding:8px 14px;border-radius:11px;font-weight:600;transition:.15s;
   min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
@@ -141,7 +140,7 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .btnrow{display:flex;gap:7px;flex-wrap:wrap}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 #cur-build b{color:var(--txt)}
-#bk-nres .btn.set{border-color:var(--accent-line);color:#f2cf8a}
+#bk-sres .btn.set{border-color:var(--accent-line);color:#f2cf8a}
 #bk-tags .tag.set{border-color:var(--accent-line);background:var(--accent-soft);color:#f2cf8a}
 #bk-tags .tag.set button{color:#e0b465}
 .ow-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
@@ -560,8 +559,6 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent;h
   #mo-filters .igrid button{flex:0 0 auto}
   #mo-filters .row{flex-wrap:wrap}
   #mo-filters .row>*{flex:1 1 100%}
-  .row.bk-srch{flex-wrap:wrap;gap:7px}
-  .row.bk-srch>*,.row.bk-srch>:last-child{flex:1 1 100%}
   #bk-series{flex-wrap:nowrap;overflow-x:auto;margin:0 -14px;padding:0 14px 4px;scrollbar-width:none}
   #bk-series::-webkit-scrollbar{display:none}
   #bk-series button{flex:0 0 auto}
@@ -1942,16 +1939,12 @@ function openArmorBulk() {
       <span class="note">스킬과 세트는 <b>OR</b> — 둘 중 하나라도 맞으면 후보에 남습니다</span>
       <button class="btn gh" style="margin-left:auto" id="mo-x">✕ 닫기</button></div>
     <div class="modal-bd">
-      <div class="fset"><div class="lbl">스킬 조건
+      <div class="fset"><div class="lbl">스킬 · 세트 조건
           <select class="sm" id="bk-mode" style="width:auto;margin-left:6px">
             <option value="or">고른 스킬 중 하나라도</option><option value="and">고른 스킬 전부</option></select>
           <span class="clr" id="bk-clear">조건 전체 해제</span></div>
-        <div class="row bk-srch" style="margin-bottom:7px">
-          <div><input type="text" id="bk-sq" placeholder="스킬 검색 — 예: 공, 회심, 속성"></div>
-          <div><input type="text" id="bk-q" placeholder="세트 · 몬스터 이름 검색 — 예: 키린, 레우스"></div>
-        </div>
+        <input type="text" id="bk-sq" style="margin-bottom:7px" placeholder="스킬 · 세트 · 몬스터 검색 — 예: 회심, 번개, 키린, 레우스">
         <div class="selskills" id="bk-sres" style="margin-bottom:7px"></div>
-        <div class="selskills" id="bk-nres" style="margin-bottom:7px"></div>
         <div class="selskills" id="bk-tags"></div>
       </div>
       <div class="fset"><div class="lbl">세트 <span class="note">(여러 개 선택 가능)</span></div>
@@ -1980,31 +1973,19 @@ function openArmorBulk() {
   function paint(keep) {   // keep = 항목만 눌렀을 때 → 스크롤 유지
     sgrid.querySelectorAll('button').forEach(b => b.classList.toggle('on', f.series.includes(b.dataset.v)));
 
-    // 스킬 검색 결과 — 눌러서 조건에 추가
+    // 검색 결과 — 스킬 후보와 세트(몬스터 이름으로도) 후보를 한 줄에. 눌러서 조건에 추가 (스킬 · 세트는 OR)
     const sres = $('#bk-sres');
-    if (!f.sq) sres.innerHTML = '<span class="note">스킬 이름 일부를 입력하면 후보가 뜹니다. 눌러서 추가하세요.</span>';
+    if (!f.sq) sres.innerHTML = '<span class="note">스킬 · 세트 · 몬스터 이름 일부를 입력하면 후보가 뜹니다. 눌러서 추가하세요.</span>';
     else {
-      const hit = FILTER_SKILLS.filter(s => s.name.toLowerCase().includes(f.sq) && !f.skills.includes(s.kind)).slice(0, 30);
-      sres.innerHTML = hit.length ? hit.map(s =>
-        `<button class="btn sm" data-addsk="${s.kind}" style="${cfgOf(s.kind)?.g ? 'border-color:#2b5734;color:#8fdc9a' : ''}">
-          ＋ ${esc(s.name)}</button>`).join('')
-        : '<span class="note">일치하는 스킬이 없습니다.</span>';
-      sres.querySelectorAll('[data-addsk]').forEach(b => b.onclick = () => {
-        f.skills.push(b.dataset.addsk); paint();
-      });
-    }
-
-    // 세트 · 몬스터 이름 검색 결과 — 스킬처럼 눌러서 조건(세트)에 추가. 스킬 조건과 OR
-    const nres = $('#bk-nres');
-    if (!f.q) nres.innerHTML = '';
-    else {
-      const hit = A_SERIES.filter(x => !f.series.includes(x.name) && seriesHay(x.name).includes(f.q)).slice(0, 30);
-      nres.innerHTML = hit.length ? hit.map(x => { const mn = monName(x);
+      const sk = FILTER_SKILLS.filter(x => qNorm(x.name).includes(f.sq) && !f.skills.includes(x.kind)).slice(0, 30);
+      const se = A_SERIES.filter(x => !f.series.includes(x.name) && seriesHay(x.name).includes(f.sq)).slice(0, 20);
+      sres.innerHTML = sk.length || se.length ? sk.map(x =>
+        `<button class="btn sm" data-addsk="${x.kind}" style="${cfgOf(x.kind)?.g ? 'border-color:#2b5734;color:#8fdc9a' : ''}">
+          ＋ ${esc(x.name)}</button>`).join('') + se.map(x => { const mn = monName(x);
         return `<button class="btn sm set" data-addser="${esc(x.name)}">＋ ${esc(x.name)}${mn && !x.name.includes(mn) ? ` <span class="note">${esc(mn)}</span>` : ''}</button>`; }).join('')
-        : '<span class="note">일치하는 세트가 없습니다.</span>';
-      nres.querySelectorAll('[data-addser]').forEach(b => b.onclick = () => {
-        f.series = [...f.series, b.dataset.addser]; paint();
-      });
+        : '<span class="note">일치하는 스킬 · 세트가 없습니다.</span>';
+      sres.querySelectorAll('[data-addsk]').forEach(b => b.onclick = () => { f.skills.push(b.dataset.addsk); paint(); });
+      sres.querySelectorAll('[data-addser]').forEach(b => b.onclick = () => { f.series = [...f.series, b.dataset.addser]; paint(); });
     }
 
     $('#bk-tags').innerHTML = f.skills.length || f.series.length ? f.skills.map(k =>
@@ -2064,12 +2045,12 @@ function openArmorBulk() {
     $('#bk-prev').innerHTML = pv.html;
     $('#bk-slots').textContent = `· 부위 ${Object.keys(pick).length}/5 · 표류석 슬롯 ${pv.slots}칸`;
   }
-  $('#bk-sq').value = f.sqRaw || ''; $('#bk-q').value = f.qRaw || ''; $('#bk-mode').value = f.mode;
-  $('#bk-sq').oninput = e => { f.sqRaw = e.target.value; f.sq = e.target.value.trim().toLowerCase(); paint(); };
-  $('#bk-q').oninput = e => { f.qRaw = e.target.value; f.q = qNorm(e.target.value); paint(); };
+  $('#bk-sq').value = f.sqRaw || ''; $('#bk-mode').value = f.mode;
+  f.sq = qNorm(f.sqRaw);
+  $('#bk-sq').oninput = e => { f.sqRaw = e.target.value; f.sq = qNorm(e.target.value); paint(); };
   $('#bk-mode').onchange = e => { f.mode = e.target.value; paint(); };
   $('#bk-clear').onclick = () => { f.skills = []; f.series = []; f.q = ''; f.sq = ''; f.qRaw = ''; f.sqRaw = '';
-    $('#bk-q').value = ''; $('#bk-sq').value = ''; paint(); };
+    $('#bk-sq').value = ''; paint(); };
   $('#bk-none').onclick = () => { PARTS.forEach(p => delete pick[p]); paint(true); };
   $('#bk-ok').onclick = () => {
     PARTS.forEach(p => {
