@@ -2,20 +2,36 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0e13">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <title>몬헌 나우 장비 세팅</title>
 <style>/*__CSS__*/</style>
 </head>
-<body>
+<body data-tab="set">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-set" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></symbol>
+  <symbol id="i-cmp" viewBox="0 0 24 24"><path d="M5 20V11M12 20V5M19 20v-6"/></symbol>
+  <symbol id="i-dex" viewBox="0 0 24 24"><path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h13"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4v6M10 14v6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6M4.6 15a8 8 0 1 0 1.9-8.3L4 10"/></symbol>
+  <symbol id="i-del" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+</svg>
 
 <header class="top"><div class="top-in">
-  <div class="brand">몬헌 나우 <span>장비 세팅</span></div>
+  <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8.5 5v10L12 22l-8.5-5V7z"/><path d="M12 7v10"/></svg>몬헌 나우 <span>장비 세팅</span></div>
   <span id="verify"></span>
   <nav class="tabs">
-    <button data-tab="set" class="on">장비 세팅</button>
-    <button data-tab="cmp">세팅 비교</button>
-    <button data-tab="dex">도감</button>
-    <button data-tab="map">스킬 매핑</button>
+    <button data-tab="set" class="on"><svg class="ico-svg" aria-hidden="true"><use href="#i-set"/></svg><span>장비 세팅</span></button>
+    <button data-tab="cmp"><svg class="ico-svg" aria-hidden="true"><use href="#i-cmp"/></svg><span>세팅 비교</span></button>
+    <button data-tab="dex"><svg class="ico-svg" aria-hidden="true"><use href="#i-dex"/></svg><span>도감</span></button>
+    <button data-tab="map"><svg class="ico-svg" aria-hidden="true"><use href="#i-map"/></svg><span>스킬 매핑</span></button>
   </nav>
 </div></header>
 
@@ -51,8 +67,8 @@
 
     <div class="card">
       <h3>방어구 <span class="sub" id="armor-sub"></span>
-        <button class="btn sm" id="btn-bulk-armor" style="margin-left:8px">일괄 선택</button>
-        <button class="btn sm" id="btn-bulk-stone">표류석 일괄</button>
+        <span class="hd-act"><button class="btn sm pill" id="btn-bulk-armor">일괄 선택</button>
+        <button class="btn sm pill" id="btn-bulk-stone">표류석 일괄</button></span>
       </h3>
       <div class="body" id="armor-box"></div>
     </div>
@@ -70,50 +86,54 @@
         </div>
         <div id="skill-over"></div>
         <div id="skill-list"></div>
-        <p class="note" style="margin:12px 0 0">
+        <details class="help"><summary>발동률 · 조건부 버튼 도움말</summary><p class="note">
           발동률 = 그 스킬이 실제로 얼마나 먹히는지. 1 = 항상 발동, 0 = 이 무기로는 발동 불가.
           추가 공격【폭파】처럼 <b>여러 번 쌓이는 스킬</b>은 한 전투에서 터지는 횟수를 넣습니다(예: 4).
           무기를 고르면 그 무기 종류 기준값이 자동으로 들어가며, 여기서 숫자를 고치면 이번 세팅에만 적용됩니다.
           늘 쓰는 값으로 굳히려면 <b>스킬 매핑</b> 탭에서 고치세요 — 거기서 고친 값은 저장되고 수정본 내보내기에도 담깁니다.<br>
           조건부 스킬(용맹·추격·연격 등)은 <b>발동 / 평균 / 미발동</b> 버튼으로 발동률을 1 · 기준값 · 0 으로 바로 바꿔
           최대치·평균·최소치 딜을 비교할 수 있습니다. 어떤 스킬에 이 버튼을 달지는 <b>스킬 매핑</b> 탭의 「조건부」 칸에서 정합니다.
-        </p>
+        </p></details>
       </div>
     </div>
 
-    <div class="card">
-      <h3>계산 과정 <span class="sub">모든 숫자를 그대로 보여줍니다</span></h3>
+    <details class="card" id="calc-card">
+      <summary>계산 과정 <span class="sub">모든 숫자를 그대로 보여줍니다</span></summary>
       <div class="body" id="calc-box"></div>
-    </div>
+    </details>
   </div>
 
-  <!-- 우측 결과 -->
-  <div class="sticky">
-    <div class="card res">
-      <h3>딜</h3>
+  <!-- 우측 결과 (폰: 아래 독을 누르면 바텀 시트로 올라온다) -->
+  <div class="sticky" id="res-sheet">
+    <div class="card res" role="dialog" aria-label="딜 결과">
+      <h3>딜 결과</h3>
+      <div class="sheet-hd"><div class="grab" id="sheet-grab"><i></i></div><h3>딜 결과</h3>
+        <button class="btn" id="sheet-x" aria-label="닫기"><svg class="ico-svg" aria-hidden="true"><use href="#i-down"/></svg></button></div>
       <div class="body">
         <div class="reslabel">기댓값 공격력</div>
         <div class="big" id="res-final">—</div>
         <div id="res-ail" class="ail hide"></div>
         <div class="divide"></div>
-        <div class="row" style="align-items:flex-end">
-          <div style="flex:0 0 96px"><label class="f">모션값 %</label><input type="number" id="motion" class="sm" placeholder="120"></div>
-          <div style="flex:1"><div class="reslabel">모션 적용 딜</div><div class="big sub2" id="res-motion">—</div></div>
-        </div>
-        <div class="divide"></div>
         <div id="res-kv"></div>
-        <details style="margin-top:6px"><summary>계산 상세</summary><div id="res-detail"></div></details>
-        <div class="btnrow" style="margin-top:14px">
+        <div class="motion-row" style="margin-top:8px">
+          <label class="f" for="motion">모션값 %</label>
+          <input type="number" id="motion" class="sm" placeholder="120" inputmode="decimal">
+          <div class="mv"><div class="reslabel">모션 적용 딜</div><div class="big sub2" id="res-motion">—</div></div>
+        </div>
+        <details style="margin-top:8px"><summary>계산 상세 · 분기별 기여</summary><div id="res-detail"></div></details>
+        <div class="res-acts">
           <button class="btn p" id="btn-save">세팅 저장</button>
           <button class="btn" id="btn-over">덮어쓰기</button>
-          <button class="btn sm" id="btn-share">링크</button>
-          <button class="btn sm" id="btn-export">내보내기</button>
-          <button class="btn sm" id="btn-import">불러오기</button>
-          <button class="btn sm dg" id="btn-reset">초기화</button>
+        </div>
+        <div class="res-tools">
+          <button class="btn" id="btn-share"><svg class="ico-svg" aria-hidden="true"><use href="#i-link"/></svg>링크</button>
+          <button class="btn" id="btn-export"><svg class="ico-svg" aria-hidden="true"><use href="#i-out"/></svg>내보내기</button>
+          <button class="btn" id="btn-import"><svg class="ico-svg" aria-hidden="true"><use href="#i-in"/></svg>불러오기</button>
+          <button class="btn dg" id="btn-reset"><svg class="ico-svg" aria-hidden="true"><use href="#i-reset"/></svg>초기화</button>
           <input type="file" id="file-import" accept="application/json" class="hide">
         </div>
-        <div id="cur-build" class="note" style="margin-top:8px"></div>
-        <div id="store-status" class="note" style="margin-top:10px"></div>
+        <div id="cur-build" class="note" style="margin-top:10px"></div>
+        <div id="store-status" class="note" style="margin-top:6px"></div>
       </div>
     </div>
   </div>
@@ -131,14 +151,14 @@
   <div class="card">
     <h3>도감 <span class="sub" id="dx-count"></span></h3>
     <div class="body">
-      <div class="row" style="margin-bottom:12px">
+      <div class="row filters" style="margin-bottom:12px">
         <div style="flex:0 0 130px"><select id="dx-kind"><option value="w">무기</option><option value="a">방어구</option></select></div>
         <div style="flex:0 0 170px"><select id="dx-cat"></select></div>
         <div style="flex:0 0 170px"><select id="dx-elem"></select></div>
         <div style="flex:0 0 170px"><select id="dx-sort"><option value="">기본 정렬</option><option value="atk">공격력순</option><option value="ele">속성값순</option><option value="crit">회심률순</option></select></div>
-        <div><input type="text" id="dx-q" placeholder="이름 · 세트 · 몬스터 · 스킬 검색"></div>
+        <div class="wide"><input type="search" id="dx-q" placeholder="이름 · 세트 · 몬스터 · 스킬 검색"></div>
       </div>
-      <div style="max-height:70vh;overflow:auto" id="dx-box"></div>
+      <div class="scrollbox" id="dx-box"></div>
     </div>
   </div>
 </section>
@@ -154,26 +174,32 @@
         예를 들어 앙심은 <code>15 → 15</code>(지속 초)와 <code>10 → 40</code>(공격력 %) 두 줄이 나오는데,
         딜에 쓸 줄을 고르는 칸입니다. 대부분은 첫 줄이 맞습니다.<br>
         <b>단위</b> — <code>%</code> 는 값을 100으로 나눠 배율로, <code>그대로</code> 는 숫자를 그대로 더합니다.</div>
-      <div class="row" style="margin-bottom:12px">
+      <div class="row filters" style="margin-bottom:12px">
         <div style="flex:0 0 190px"><select id="map-only">
           <option value="atk">딜 반영 + 공격·속성</option>
           <option value="on">딜 반영만</option>
           <option value="off">딜 미반영만</option>
           <option value="">전체</option></select></div>
-        <div><input type="text" id="map-q" placeholder="스킬 이름 검색"></div>
-        <div style="flex:0 0 auto"><button class="btn" id="map-export">수정본 내보내기</button></div>
-        <div style="flex:0 0 auto"><button class="btn" id="map-import">수정본 불러오기</button>
+        <div><input type="search" id="map-q" placeholder="스킬 이름 검색"></div>
+        <div style="flex:0 0 auto"><button class="btn" style="width:100%" id="map-export">수정본 내보내기</button></div>
+        <div style="flex:0 0 auto"><button class="btn" style="width:100%" id="map-import">수정본 불러오기</button>
           <input type="file" id="map-file" accept=".json,application/json" style="display:none"></div>
-        <div style="flex:0 0 auto"><button class="btn dg" id="map-reset">기본값 복원</button></div>
+        <div style="flex:0 0 auto" class="wide"><button class="btn dg" style="width:100%" id="map-reset">기본값 복원</button></div>
       </div>
-      <div style="max-height:70vh;overflow:auto" id="map-box"></div>
+      <div class="scrollbox" id="map-box"></div>
     </div>
   </div>
 </section>
 
 </main>
 
-<div class="toast" id="toast"></div>
+<button class="dock" id="dock" aria-label="딜 결과 열기">
+  <span class="dk-tx"><span class="dk-l">기댓값 공격력</span>
+    <span class="dk-v"><b id="dock-final" class="none">무기를 선택하세요</b><span id="dock-sub"></span></span></span>
+  <span class="dk-go"><svg class="ico-svg" aria-hidden="true"><use href="#i-up"/></svg></span>
+</button>
+<div id="sheet-bg"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div id="modal-root"></div>
 
 <script id="app-data" type="application/json">/*__DATA__*/</script>
