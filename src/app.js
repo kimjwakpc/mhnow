@@ -538,10 +538,10 @@ function renderStyle() {
   const b = styleBonus(S.style, S.w.id);
   const choices = prof ? Object.keys(prof.milestone) : ['Attack', 'Element', 'Critical'];
   box.innerHTML = `
-    <div style="display:flex;align-items:baseline;gap:9px">
+    <div class="sty-hd">
       <span class="reslabel">스타일 Lv</span>
-      <strong style="font-size:23px">${S.style.lv}</strong>
-      <span style="margin-left:auto;font-size:12px" class="note">
+      <strong>${S.style.lv}</strong>
+      <span class="note">
         공 <b style="color:var(--txt)">+${fmt(b.atk)}</b> ·
         속 <b style="color:var(--txt)">+${fmt(b.ele)}</b> ·
         회 <b style="color:var(--txt)">+${(b.crit * 100).toFixed(0)}%</b></span>
@@ -613,8 +613,7 @@ function renderArmor() {
 function stoneBtn(p, i) {
   const s = S.a[p].stones[i];
   const label = s ? `${s.color[0]} ${skName(s.kind)}` : '＋ 표류석';
-  return `<button class="btn sm ${s ? '' : 'gh'}" data-stone="${p}|${i}"
-    style="${s ? 'border-color:var(--accent2)' : ''}">${esc(label)}</button>`;
+  return `<button class="btn sm pill ${s ? 'stone-on' : 'gh'}" data-stone="${p}|${i}">${esc(label)}</button>`;
 }
 
 function pickArmor(part) {
@@ -1010,7 +1009,7 @@ function render() {
     renderSkills(agg);
     $('#res-final').textContent = '—'; $('#res-motion').textContent = '—';
     $('#res-kv').innerHTML = '<div class="muted">무기를 선택하면 딜이 계산됩니다.</div>';
-    $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); return;
+    $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); paintDock(null); return;
   }
   const r = calc(ws, agg);
   if (W_BY_ID[S.w.id]?.spec?.kind === 'AMMO') renderSpec(W_BY_ID[S.w.id]);
@@ -1020,6 +1019,7 @@ function render() {
   renderAilment(ws, agg);
   updateSaveUI();
   $('#res-motion').textContent = S.motion ? fmt(r.motionDmg, 1) : '—';
+  paintDock(r);
   $('#res-kv').innerHTML = `
     <div class="kv"><span>총 공격력</span><b>${fmt(r.totalAtk, 1)}</b></div>
     <div class="kv"><span>총 속성</span><b>${fmt(r.totalEle, 1)}</b></div>
@@ -1035,6 +1035,14 @@ function render() {
       ['G 최종 곱', r.acc.G, 1], ['회심격【속성】', r.acc.CRIT_ELEM, 1], ['슈퍼회심', r.acc.CRIT_MULT, 1],
       ['흉회심 배율', r.acc.BRUTAL, 1]].map(([n, v, p]) =>
       `<tr><th>${n}</th><td class="n">${p ? (v * 100).toFixed(1) + '%' : fmt(v, 1)}</td></tr>`).join('')}</table>`;
+}
+// 폰 화면 아래 독 — 기댓값 공격력 요약
+function paintDock(r) {
+  const v = $('#dock-final'), sub = $('#dock-sub');
+  if (!r) { v.textContent = '무기를 선택하세요'; v.className = 'none'; sub.textContent = ''; return; }
+  v.textContent = fmt(r.finalDmg, 1); v.className = '';
+  sub.textContent = S.motion ? `모션 ${fmt(r.motionDmg, 1)}`
+    : `공 ${fmt(r.totalAtk)} · 속 ${fmt(r.totalEle)} · 회 ${(r.critTotal * 100).toFixed(0)}%`;
 }
 // 기댓값 공격력 밑 — 독·마비·수면·폭파 무기일 때만 상태 이상 축적 확률
 function renderAilment(ws, agg) {
@@ -1194,6 +1202,7 @@ function skillDescHtml(k, lv) {
   return `<div class="ds-ln">${d.L.map((l, i) => `<div class="${i === ci ? 'cur' : ''}"><i>Lv${l.lv}</i>${esc(l.desc)}</div>`).join('')}</div>`;
 }
 
+const DET_OPEN = {};   // 다시 그려도 펼침 상태 유지
 function renderSkills(agg, blocked) {
   const box = $('#skill-list');
   window.__aggRaw = agg.raw;
@@ -1233,7 +1242,8 @@ function renderSkills(agg, blocked) {
   $('#skill-bulk-n').textContent = condOn.length ? `조건부 ${condOn.length}` : '';
   box.innerHTML = !ent.length ? '<div class="muted">장비를 선택하면 스킬이 집계됩니다.</div>'
     : (on.length ? on.map(row).join('') : '<div class="muted">딜에 반영되는 스킬이 없습니다.</div>')
-      + (off.length ? `<details open style="margin-top:6px"><summary>딜 미반영 ${off.length}개 (내성·생존·유틸)</summary>${off.map(row).join('')}</details>` : '');
+      + (off.length ? `<details class="offsk"${DET_OPEN.offsk ? ' open' : ''} data-keep="offsk"><summary>딜 미반영 ${off.length}개 <span class="note">내성 · 생존 · 유틸</span></summary>${off.map(row).join('')}</details>` : '');
+  box.querySelectorAll('details[data-keep]').forEach(d => d.ontoggle = () => { DET_OPEN[d.dataset.keep] = d.open; });
   box.querySelectorAll('[data-corr]').forEach(i => i.onchange = e => {
     S.corr[e.target.dataset.corr] = Number(e.target.value); render();
   });
@@ -1418,40 +1428,40 @@ function renderCompare() {
     .sort((a, b) => b.e.r.finalDmg - a.e.r.finalDmg);
   if (!rows.length) { box.innerHTML = '<div class="empty">계산 가능한 세팅이 없습니다.</div>'; return; }
   const max = rows[0].e.r.finalDmg;
-  box.innerHTML = `<table><thead><tr><th>#</th><th>이름</th><th>무기</th><th class="n">총공</th><th class="n">총속</th>
-    <th class="n">회심</th><th class="n">기댓값</th><th class="n">모션딜</th><th style="width:110px"></th><th></th></tr></thead><tbody>${
-    rows.map((x, n) => `<tr>
-      <td>${n + 1}</td>
-      <td><b>${esc(x.b.name)}</b>${x.b.id === CUR_ID ? ' <span class="chip g">불러온 세팅</span>' : ''}<br><span class="note">${new Date(x.b.t).toLocaleString('ko-KR')}</span></td>
-      <td>${esc(x.e.ws.name)}<br><span class="note">${esc(x.e.ws.series)}</span></td>
-      <td class="n">${fmt(x.e.r.totalAtk)}</td><td class="n">${fmt(x.e.r.totalEle)}</td>
-      <td class="n">${(x.e.r.critTotal * 100).toFixed(0)}%</td>
-      <td class="n"><b style="font-size:15px">${fmt(x.e.r.finalDmg, 1)}</b><br>
-        <span class="note">${n ? ((x.e.r.finalDmg / max - 1) * 100).toFixed(1) + '%' : '기준'}</span></td>
-      <td class="n">${x.e.r.motionDmg != null ? fmt(x.e.r.motionDmg, 1) : '—'}</td>
-      <td><div class="bar" style="width:${(x.e.r.finalDmg / max * 100).toFixed(1)}%"></div></td>
-      <td><div class="btnrow" style="gap:4px"><button class="btn sm" data-load="${x.i}">불러오기</button>
-          <button class="btn sm" data-over="${x.i}" title="지금 장비 세팅 화면의 내용으로 이 세팅을 덮어씁니다">덮어쓰기</button>
-          <button class="btn sm" data-ren="${x.i}">이름</button>
-          <button class="btn sm dg" data-del="${x.i}">삭제</button></div></td></tr>`).join('')}</tbody></table>`;
+  const ico = id => `<svg class="ico-svg" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+  box.innerHTML = `<div class="cmp">${rows.map((x, n) => { const r = x.e.r, pct = r.finalDmg / max * 100;
+    return `<div class="cmp-card${n ? '' : ' top'}${x.b.id === CUR_ID ? ' cur' : ''}">
+      <div class="cmp-hd"><span class="cmp-rk">${n + 1}</span>
+        <div class="cmp-nm"><b>${esc(x.b.name)}${x.b.id === CUR_ID ? ' <span class="chip g">불러온 세팅</span>' : ''}</b>
+          <em>${esc(x.e.ws.name)} · ${esc(x.e.ws.series)}</em>
+          <em>${new Date(x.b.t).toLocaleString('ko-KR')}</em></div>
+        <div class="cmp-val"><b>${fmt(r.finalDmg, 1)}</b><span>${n ? (pct - 100).toFixed(1) + '%' : '기준'}</span></div></div>
+      <div class="cmp-track"><div class="bar" style="width:${pct.toFixed(1)}%"></div></div>
+      <div class="cmp-stats"><span>공 <b>${fmt(r.totalAtk)}</b></span><span>속 <b>${fmt(r.totalEle)}</b></span>
+        <span>회 <b>${(r.critTotal * 100).toFixed(0)}%</b></span>${r.motionDmg != null ? `<span>모션 <b>${fmt(r.motionDmg, 1)}</b></span>` : ''}</div>
+      <div class="cmp-acts"><button class="btn sm" data-load="${x.i}">불러오기</button>
+        <button class="btn sm" data-over="${x.i}" title="지금 장비 세팅 화면의 내용으로 이 세팅을 덮어씁니다">덮어쓰기</button>
+        <button class="btn sm" data-ren="${x.i}">이름</button>
+        <button class="btn sm dg" data-del="${x.i}" aria-label="삭제" title="삭제">${ico('del')}</button></div>
+    </div>`; }).join('')}</div>`;
   box.querySelectorAll('[data-load]').forEach(b => b.onclick = e => {
-    const b = BUILDS[+e.target.dataset.load];
+    const b = BUILDS[+e.currentTarget.dataset.load];
     restore(b); CUR_ID = b.id; updateSaveUI(); go('set'); toast(`「${b.name}」을 불러왔습니다`);
   });
   box.querySelectorAll('[data-over]').forEach(b => b.onclick = e => {
-    const t = BUILDS[+e.target.dataset.over];
+    const t = BUILDS[+e.currentTarget.dataset.over];
     if (!confirm(`「${t.name}」을 지금 장비 세팅 화면의 내용으로 덮어쓸까요?`)) return;
     overwriteBuild(t); CUR_ID = t.id; updateSaveUI(); renderCompare(); toast(`「${t.name}」에 덮어썼습니다`);
   });
   box.querySelectorAll('[data-ren]').forEach(b => b.onclick = e => {
-    const t = BUILDS[+e.target.dataset.ren];
+    const t = BUILDS[+e.currentTarget.dataset.ren];
     const n = prompt('세팅 이름', t.name); if (!n || n === t.name) return;
     t.name = n; saveB(BUILDS); storeStatus(); updateSaveUI(); renderCompare();
   });
   box.querySelectorAll('[data-del]').forEach(b => b.onclick = e => {
-    const t = BUILDS[+e.target.dataset.del];
+    const t = BUILDS[+e.currentTarget.dataset.del];
     if (!confirm(`「${t.name}」을 삭제할까요?`)) return;
-    BUILDS.splice(+e.target.dataset.del, 1); if (t.id === CUR_ID) CUR_ID = null;
+    BUILDS.splice(+e.currentTarget.dataset.del, 1); if (t.id === CUR_ID) CUR_ID = null;
     saveB(BUILDS); storeStatus(); updateSaveUI(); renderCompare();
   });
 }
@@ -1482,14 +1492,14 @@ function buildDex() {
       const top = w => w.g[w.g.length - 1].lv[4];
       if (sort.value) { const i = { atk: 0, ele: 1, crit: 2 }[sort.value]; list = [...list].sort((a, b) => top(b)[i] - top(a)[i]); }
       $('#dx-count').textContent = list.length + '개';
-      box.innerHTML = `<table><thead><tr><th></th><th>이름</th><th>종류</th><th>세트</th><th>속성</th>
+      box.innerHTML = `<table class="cardtbl dx-w"><thead><tr><th></th><th>이름</th><th>종류</th><th>세트</th><th>속성</th>
         <th class="n">최대공</th><th class="n">속성</th><th class="n">회심</th><th>무기 스킬</th><th>고유</th></tr></thead><tbody>${
         list.slice(0, 400).map(w => { const g = w.g[w.g.length - 1], L = g.lv[4]; return `<tr>
           <td>${w.img ? `<img loading="lazy" src="${w.img}" style="width:28px;height:28px;object-fit:contain">` : ''}</td>
           <td><b>${esc(g.name)}</b>${badges(w)}</td><td>${w.catName}</td>
-          <td>${w.icon ? `<img loading="lazy" src="${w.icon}" style="width:20px;height:20px;object-fit:contain;vertical-align:-4px">` : ''} ${esc(w.series)}</td>
+          <td data-pre="${w.catName} · ${META.elementNames[w.elem] || '무속성'} · ">${w.icon ? `<img loading="lazy" src="${w.icon}" style="width:20px;height:20px;object-fit:contain;vertical-align:-4px">` : ''} ${esc(w.series)}</td>
           <td>${META.elementNames[w.elem] || '—'}</td>
-          <td class="n">${fmt(L[0])}</td><td class="n">${L[1] ? fmt(L[1]) : '—'}</td><td class="n">${L[2] ? L[2] + '%' : '—'}</td>
+          <td class="n">${fmt(L[0])}</td><td class="n${L[1] ? '' : ' z'}">${L[1] ? fmt(L[1]) : '—'}</td><td class="n${L[2] ? '' : ' z'}">${L[2] ? L[2] + '%' : '—'}</td>
           <td>${g.sk.map(([k, l]) => `<span class="chip">${esc(skName(k))} ${l}</span>`).join(' ')}</td>
           <td><span class="note">${esc(specShort(w))}</span></td></tr>`; }).join('')}
         </tbody></table>${list.length > 400 ? '<div class="note" style="padding:8px">상위 400개 표시 — 검색으로 좁혀보세요.</div>' : ''}`;
@@ -1497,7 +1507,7 @@ function buildDex() {
       const list = ARMOR.filter(a => (!cat.value || a.cat === cat.value)
         && (!kw || aHay(a).includes(kw)));
       $('#dx-count').textContent = list.length + '개';
-      box.innerHTML = `<table><thead><tr><th></th><th>세트</th><th>부위</th><th class="n">최대G</th>
+      box.innerHTML = `<table class="cardtbl dx-a"><thead><tr><th></th><th>세트</th><th>부위</th><th class="n">최대G</th>
         <th class="n">방어력</th><th class="n">슬롯</th><th>스킬</th></tr></thead><tbody>${
         list.map(a => { const g = a.g[a.g.length - 1]; return `<tr>
           <td>${a.icon ? `<img loading="lazy" src="${a.icon}" style="width:26px;height:26px;object-fit:contain">` : ''}</td>
@@ -1523,7 +1533,7 @@ function renderMap() {
   if (only === 'atk') list = list.filter(s => cfgOf(s.kind)?.g || s.cat === 'ATTACK_BOOST' || s.cat === 'ELEMENT_BOOST');
   if (q) list = list.filter(s => (s.name + s.kind).toLowerCase().includes(q));
   $('#map-count').textContent = list.length + '개' + (Object.keys(CFG_OV).length ? ` · 수정 ${Object.keys(CFG_OV).length}` : '');
-  box.innerHTML = `<table><thead><tr>
+  box.innerHTML = `<table class="cardtbl"><thead><tr>
       <th style="width:180px">스킬</th><th style="width:148px">그룹</th><th style="width:230px">쓸 수치 (Lv1→최대)</th>
       <th style="width:74px">단위</th>
       <th style="width:78px" title="평소 기대치. 스택이 쌓이는 스킬은 평균 스택 수를 넣습니다">발동률</th>
@@ -1536,17 +1546,17 @@ function renderMap() {
         `<option value="${n}"${(c.i ?? 0) === n ? ' selected' : ''}>${s.levels.map(l => l.eff[n]).join(' → ')}</option>`).join('');
       return `<tr${ov ? ' style="background:#2a211044"' : ''}>
         <td><b>${esc(s.name)}</b><br><span class="note">${META.skillCatNames[s.cat] || s.cat}</span></td>
-        <td><select class="sm" data-mg="${s.kind}">${GROUPS.map(g =>
+        <td data-l="그룹"><select class="sm" data-mg="${s.kind}">${GROUPS.map(g =>
           `<option value="${g}"${(c.g || '') === g ? ' selected' : ''}>${GROUP_LABEL[g] || g}</option>`).join('')}</select></td>
-        <td>${nSlot ? `<select class="sm" data-mi="${s.kind}">${slots}</select>` : '<span class="note">수치 없음</span>'}</td>
-        <td><select class="sm" data-ms2="${s.kind}">
+        <td data-l="쓸 수치 (Lv1→최대)">${nSlot ? `<select class="sm" data-mi="${s.kind}">${slots}</select>` : '<span class="note">수치 없음</span>'}</td>
+        <td data-l="단위"><select class="sm" data-ms2="${s.kind}">
           <option value="0.01"${(c.s ?? 0.01) === 0.01 ? ' selected' : ''}>%</option>
           <option value="1"${c.s === 1 ? ' selected' : ''}>그대로</option></select></td>
-        <td><input class="sm" type="number" step="0.01" min="0" max="99" value="${defaultRateOf(s.kind)}" data-mc="${s.kind}"${
+        <td data-l="발동률"><input class="sm" type="number" step="0.01" min="0" max="99" value="${defaultRateOf(s.kind)}" data-mc="${s.kind}"${
           c.g ? (isAilmentLinked(s.kind) ? ' title="지금 무기·스킬의 상태 이상 축적 확률에 연동 — 여기서 고치면 연동이 풀리고, 기본값 복원으로 다시 연동됩니다"' : '') : ' disabled'}></td>
-        <td style="text-align:center"><input type="checkbox" data-mcond="${s.kind}"${condOf(s.kind) ? ' checked' : ''}${
+        <td data-l="조건부" style="text-align:center"><input type="checkbox" data-mcond="${s.kind}"${condOf(s.kind) ? ' checked' : ''}${
           c.g ? '' : ' disabled title="딜 미반영 스킬에는 필요 없습니다"'}></td>
-        <td><input class="sm" type="number" step="0.01" min="0" max="99" value="${onValOf(s.kind)}" data-mon="${s.kind}"${
+        <td data-l="발동 시"><input class="sm" type="number" step="0.01" min="0" max="99" value="${onValOf(s.kind)}" data-mon="${s.kind}"${
           c.g && condOf(s.kind) ? '' : ' disabled title="조건부 스킬에만 씁니다"'}></td>
         <td><span class="note">${esc((s.levels[s.levels.length - 1].desc || '').slice(0, 110))}</span></td>
       </tr>`; }).join('')}</tbody></table>`;
@@ -1709,17 +1719,49 @@ function initTip() {
    ========================================================= */
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
 function go(tab) {
-  $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+  sheet(false);
+  document.body.dataset.tab = tab;
+  if (tab !== $('nav.tabs button.on')?.dataset.tab) scrollTo(0, 0);
+  $$('nav.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'); });
   ['set', 'cmp', 'dex', 'map'].forEach(t => $('#pg-' + t).classList.toggle('hide', t !== tab));
   if (tab === 'cmp') renderCompare();
   if (tab === 'map') renderMap();
+}
+/* 폰 — 딜 결과 바텀 시트 */
+function sheet(open) {
+  document.body.classList.toggle('sheet', !!open);
+  $('#dock')?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  const card = $('#res-sheet .card'); if (card) { card.style.transform = ''; if (open) card.scrollTop = 0; }
+}
+function initSheet() {
+  $('#dock').onclick = () => sheet(true);
+  $('#sheet-x').onclick = () => sheet(false);
+  $('#sheet-bg').onclick = () => sheet(false);
+  // 손잡이·제목줄을 아래로 끌면 닫힌다
+  const card = $('#res-sheet .card'), hd = $('#res-sheet .sheet-hd');
+  let y0 = null, dy = 0;
+  hd.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; dy = 0; card.style.transition = 'none'; }, { passive: true });
+  hd.addEventListener('touchmove', e => {
+    if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0);
+    card.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  hd.addEventListener('touchend', () => {
+    card.style.transition = ''; card.style.transform = '';
+    if (dy > 80) sheet(false); y0 = null; dy = 0;
+  });
+  matchMedia('(min-width:1081px)').addEventListener?.('change', e => { if (e.matches) sheet(false); });
 }
 const enc = () => btoa(unescape(encodeURIComponent(JSON.stringify(snapshot('공유 세팅')))));
 const dec = s => JSON.parse(decodeURIComponent(escape(atob(s))));
 
 function boot() {
   initTip();
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#mo')) softCloseModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if ($('#mo')) softCloseModal(); else if (document.body.classList.contains('sheet')) sheet(false);
+  });
+  initSheet();
+  if (matchMedia('(min-width:761px)').matches) $('#calc-card').open = true;   // 넓은 화면은 계산 과정을 펼쳐 둔다
   $('#slot-w').onclick = pickWeapon;
   $('#btn-bulk-armor').onclick = openArmorBulk;
   $('#btn-bulk-stone').onclick = openStoneBulk;

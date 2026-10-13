@@ -19,7 +19,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/'
 SRC = BASE + '몬헌나우_장비세팅.html'
 OUT = BASE + 'docs/'
 NAME = '몬헌 나우 장비 세팅'
-BG, FG = '#0e1116', '#f0a93b'
+BG, FG = '#0b0e13', '#f2a93b'
 
 os.makedirs(OUT, exist_ok=True)
 html = open(SRC, encoding='utf-8').read()
