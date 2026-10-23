@@ -72,6 +72,7 @@ PROF_KO = {
     'Ailment_4': '상태이상 무기 1 (독·폭파)', 'Ailment_5': '상태이상 무기 2',
     'Ailment_6': '상태이상 무기 3 (바젤기우스)',
     'Element_6': '속성 무기 6 (타마미츠네)',
+    'AzureRathalos': '리오레우스 아종', 'BlackDiables': '흑디아블로스',
 }
 ed = B['equipDetails']
 profiles = {}

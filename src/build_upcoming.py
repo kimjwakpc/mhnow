@@ -67,15 +67,18 @@ for m in U.get('monsters', []):
                    'sk': [list(x) for x in sk], 'sp': None}],
         })
 
+    # partsOnly: true → armor 에 적은 부위만 만든다 (이벤트 방어구처럼 3부위뿐인 세트)
+    # armorNames: {"LEGS": "스케어크로레그"} → 부위별 이름. 없으면 몬스터 이름
     for p in PARTS:
+        if m.get('partsOnly') and p not in m['armor']: continue
         sk = m['armor'].get(p, [])
         new_a.append({
             'id': f'PENDING_{mid}_{p}', 'cat': p, 'catName': PARTNAME[p],
             'sid': 9400, 'skey': 'PENDING_' + mid, 'series': series,
             'mon': mid, 'icon': None, 'ssort': SSORT_BASE + m.get('sort', 0),
-            'name': m['name'], 'event': False, 'pending': True,
+            'name': m.get('armorNames', {}).get(p, m['name']), 'event': bool(m.get('event')), 'pending': True,
             'skAll': sorted({x[0] for x in sk}),
-            'g': [{'gr': 10, 'slot': 1, 'sk': [list(x) for x in sk], 'def': [197] * 5}],
+            'g': [{'gr': 10, 'slot': m.get('slot', 1), 'sk': [list(x) for x in sk], 'def': [m.get('def', 197)] * 5}],
         })
 
 # ── 표류석 보정 ───────────────────────────────────────────
@@ -108,6 +111,7 @@ for n, d in [('weapons', W), ('armor', A), ('skills', SK), ('monsters', MON)]:
 print(f"예정 몬스터 {len(U.get('monsters', []))}종 → 무기 {len(new_w)} · 방어구 {len(new_a)} 추가")
 for m in U.get('monsters', []):
     n = len(WORDER) if m.get('weapons') == 'ALL' else len(m['weapons'])
-    print(f"   {m['name']:16s} {m['series']:14s} 무기 {n}종 · 방어구 5부위")
+    na = len(m['armor']) if m.get('partsOnly') else 5
+    print(f"   {m['name']:16s} {m['series']:14s} 무기 {n}종 · 방어구 {na}부위")
 print('추가 스킬:', added_sk or '없음')
 print('표류석 보정:', ', '.join(drift_added) or '없음')
