@@ -68,6 +68,7 @@ const SKILL_CFG = {
   DEATHGARON:                 { g:'CRIT', i:0, s:0.01, corr:0.7 }, // 견인불발
   MORPH_ATTACK_BOOST:         { g:'G', i:0, s:0.01, corr:1,        // 변형 공격 강화
                                 also:[{ g:'CRIT', i:1, s:0.01, corr:1 }] },
+  AMATSU_CONVERSION:          { g:'D', i:0, s:0.01, corr:1, perAtk:true },  // 폭풍룡의 취천 — 무기 공격력(스타일 포함)의 10/20/35% 를 무기 속성에 가산 (속성 무기만)
   POWERHOUSE_CRITICAL:        { g:'B', i:0, s:1, corr:1, perCrit:true },  // 공격 증강【회심】 — 무기 회심률(기본+스타일) 1%당 공격력 +8
 
   // ---- 회심 배율 ----
@@ -228,6 +229,7 @@ function calcDamage(p) {
   const stb = styleBonus(p.style, p.weaponId);
   const crit0 = Number(p.critical) || 0;
   const wCrit = crit0 + stb.crit;            // 무기 회심률 (스타일 포함, 0.2 = 20%)
+  const wAtk = (Number(p.attack) || 0) + stb.atk, wEle = (Number(p.element) || 0) + stb.ele;
 
   function apply(kind, lv, cfg) {
     const def = S[kind];
@@ -236,6 +238,7 @@ function calcDamage(p) {
     if (!L) return;
     let raw = (L.eff[cfg.i] ?? 0) * cfg.s;
     if (cfg.hicharge) raw = (L.eff[1] ?? 0) * (110 + hpVal);
+    if (cfg.perAtk) { if (!(wEle > 0)) return; raw = (L.eff[cfg.i] ?? 0) * cfg.s * wAtk; }   // 무기 공격력 비례
     if (cfg.perCrit) raw = (L.eff[cfg.i] ?? 0) * Math.max(0, Math.round(wCrit * 1000) / 10);   // 무기 회심 1%당 N
     // 속성 특화 스킬은 무기 속성이 일치할 때만
     if (cfg.elem && cfg.elem !== p.weaponElem) return;

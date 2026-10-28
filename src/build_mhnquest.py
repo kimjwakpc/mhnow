@@ -117,6 +117,8 @@ filled_w = filled_a = 0
 done, skipped, new_sk = [], [], []
 
 for mon in pend_mons:
+    if MON.get(mon, {}).get('manual'):            # 유출·공지로 손으로 적은 세트 — mhn.quest 로 덮어쓰지 않음
+        skipped.append(MON[mon]['name'] + '(수동)'); continue
     qk = q_by_mon.get(mon)
     if not qk:
         skipped.append(MON.get(mon, {}).get('name', mon)); continue

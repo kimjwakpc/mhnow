@@ -389,11 +389,13 @@ function pickWeapon() {
         <span class="st"><b>${fmt(L[0])}</b>${L[1] ? '속 ' + fmt(L[1]) : ''}${L[2] ? ' 회 ' + L[2] + '%' : ''}</span>
       </button>`; },
     onPick: id => { S.w.id = id; S.w.gr = null; S.w.lv = 5;
-      S.w.ovr = W_BY_ID[id]?.pending ? { atk: 0, ele: 0, crit: 0 } : null;
+      S.w.ovr = statsUnknown(W_BY_ID[id]) ? { atk: 0, ele: 0, crit: 0 } : null;
       renderWeapon(); render(); },
   });
 }
 
+// 예정 무기 중 수치를 모르는 것 (유출 · 공지로 수치를 아는 예정 무기는 그 값을 바로 쓴다)
+const statsUnknown = w => !!w && w.pending && !w.g.some(g => g.lv.some(l => l[0]));
 function weaponStats() {
   const w = W_BY_ID[S.w.id]; if (!w) return null;
   const g = w.g.find(x => x.gr === S.w.gr) || w.g[w.g.length - 1];
@@ -425,15 +427,15 @@ function renderWeapon() {
     <span class="mini">레벨</span>
     <select class="sm" id="w-lv" style="width:auto">${[1, 2, 3, 4, 5].map(i => `<option value="${i}"${i === S.w.lv ? ' selected' : ''}>Lv${i}</option>`).join('')}</select>
     ${st.sk.length ? st.sk.map(([k, l]) => `<span class="chip a">${esc(skName(k))} ${l}</span>`).join('') : ''}`;
-  if (w.pending || S.w.ovr) {
+  if (statsUnknown(w) || S.w.ovr) {
     const o = S.w.ovr || { atk: st.atk, ele: st.ele, crit: st.crit * 100 };
     ctl.insertAdjacentHTML('beforeend',
       `<div style="flex-basis:100%;height:0"></div>
-       <span class="mini">${w.pending ? '수치 미공개 — 직접 입력' : '스탯 직접 입력'}</span>
+       <span class="mini">${statsUnknown(w) ? '수치 미공개 — 직접 입력' : '스탯 직접 입력'}</span>
        <input class="sm" type="number" id="ov-atk" style="width:86px" placeholder="공격" value="${o.atk || ''}">
        <input class="sm" type="number" id="ov-ele" style="width:86px" placeholder="속성" value="${o.ele || ''}">
        <input class="sm" type="number" id="ov-crit" style="width:80px" placeholder="회심%" value="${o.crit || ''}">
-       ${w.pending ? '' : '<button class="btn sm gh" id="ov-off">해제</button>'}`);
+       ${statsUnknown(w) ? '' : '<button class="btn sm gh" id="ov-off">해제</button>'}`);
     ['atk', 'ele', 'crit'].forEach(k => $('#ov-' + k).oninput = e => {
       S.w.ovr = { ...(S.w.ovr || { atk: 0, ele: 0, crit: 0 }), [k]: Number(e.target.value) || 0 };
       render();   // render() 가 슬롯 오른쪽 수치도 갱신
@@ -442,8 +444,8 @@ function renderWeapon() {
   }
   $('#w-gr').onchange = e => { S.w.gr = Number(e.target.value); renderWeapon(); render(); };
   $('#w-lv').onchange = e => { S.w.lv = Number(e.target.value); renderWeapon(); render(); };
-  $('#w-sub').textContent = `${w.catName} · G${S.w.gr} Lv${S.w.lv}` + (w.event ? ' · 이벤트 무기(나우칼 데이터)' : '')
-    + (w.pending ? ' · 패치 예정 · 수치 미공개' : '') + (w.alt ? ' · 공식 미등재 · mhn.quest 수치' : '');
+  $('#w-sub').textContent = `${w.catName} · G${S.w.gr} Lv${S.w.lv}` + (w.event && !w.pending ? ' · 이벤트 무기(나우칼 데이터)' : '')
+    + (w.pending ? (statsUnknown(w) ? ' · 패치 예정 · 수치 미공개' : ' · 출시 예정 · 유출 정보 수치 (Lv1~4 는 추정)') : '') + (w.alt ? ' · 공식 미등재 · mhn.quest 수치' : '');
   renderSpec(w);
   renderStyle();
 }

@@ -1,5 +1,5 @@
 {
- "_설명": "패치 예정·공식 미등재 장비. 공식 가이드에 아직 없어 손으로 적는 파일입니다. src/build_upcoming.py 가 읽어서 data 에 합치고, src/build_mhnquest.py 가 mhn.quest 수치로 채웁니다. 공식 가이드에 올라오면 여기서 지우면 됩니다. (2026-09-17: 브라키디오스·이소네미쿠니 아종 공식 등재로 삭제 / 2026-09-23: 가디언 방어구 추가 — 나우칼·mhn.quest 에만 있음) / 2026-10-23: 헬러윈 2026 방어구(머리·허리·다리) 추가 — 다음 주 이벤트, 나우칼에만 있음 (mhn.quest 는 다리만)",
+ "_설명": "패치 예정·공식 미등재 장비. 공식 가이드에 아직 없어 손으로 적는 파일입니다. src/build_upcoming.py 가 읽어서 data 에 합치고, src/build_mhnquest.py 가 mhn.quest 수치로 채웁니다. 공식 가이드에 올라오면 여기서 지우면 됩니다. (2026-09-17: 브라키디오스·이소네미쿠니 아종 공식 등재로 삭제 / 2026-09-23: 가디언 방어구 추가 — 나우칼·mhn.quest 에만 있음) / 2026-10-23: 헬러윈 2026 방어구(머리·허리·다리) 추가 — 다음 주 이벤트, 나우칼에만 있음 (mhn.quest 는 다리만) / 2026-10-28: 10.27 서버 업데이트 유출 정보로 카니발 2026 · 아마츠마가츠치 장비 추가 (manual — mhn.quest 로 덮어쓰지 않음)",
  "_무기종류키": [
   "대검",
   "한손검",
@@ -28,6 +28,67 @@
    "name": "파괴왕【핼러윈】",
    "max": 1,
    "cat": "BATTLE_ACTION"
+  },
+  {
+   "kind": "AMATSU_CONVERSION",
+   "name": "폭풍룡의 취천",
+   "max": 3,
+   "cat": "ATTACK_BOOST",
+   "levels": [
+    {
+     "eff": [
+      10
+     ],
+     "desc": "무기의 공격력에 비례하여 무기 속성 공격력이 증가한다. (무기 공격력의 10%)"
+    },
+    {
+     "eff": [
+      20
+     ],
+     "desc": "무기의 공격력에 비례하여 무기 속성 공격력이 증가한다. (무기 공격력의 20%)"
+    },
+    {
+     "eff": [
+      35
+     ],
+     "desc": "무기의 공격력에 비례하여 무기 속성 공격력이 증가한다. (무기 공격력의 35%)"
+    }
+   ]
+  },
+  {
+   "kind": "AMATSU_STORM_EDGE",
+   "name": "폭풍룡의 폭풍 칼날",
+   "max": 1,
+   "cat": "SPECIAL",
+   "levels": [
+    {
+     "eff": [
+      20,
+      10
+     ],
+     "desc": "특수 스킬을 처음 맞춘 곳에 절단 대미지를 여러 번 준다. (모션값 20의 절단 대미지 10회)"
+    }
+   ]
+  },
+  {
+   "kind": "LATENT_POWER_SECRET",
+   "name": "힘의 해방·경지",
+   "max": 2,
+   "cat": "ATTACK_BOOST",
+   "levels": [
+    {
+     "eff": [
+      30
+     ],
+     "desc": "Lv5 이상의 「힘의 해방」 스킬이 발동 중일 때, 효과가 발동하기 쉬워진다. (발동까지 50초 → 30초)"
+    },
+    {
+     "eff": [
+      13
+     ],
+     "desc": "Lv5 이상의 「힘의 해방」 스킬이 발동 중일 때, 효과가 발동하기 쉬워진다. (발동까지 50초 → 13초)"
+    }
+   ]
   }
  ],
  "monsters": [
@@ -122,6 +183,465 @@
      [
       "BRUTAL_STRIKE",
       2
+     ]
+    ]
+   }
+  },
+  {
+   "id": "amatsu",
+   "name": "아마츠마가츠치",
+   "series": "아마츠 세트 (예정)",
+   "elem": "water",
+   "sort": 640,
+   "manual": true,
+   "weapons": "ALL",
+   "weaponElem": "water",
+   "weaponStats": [
+    2200,
+    1380,
+    -20
+   ],
+   "weaponSkills": [
+    [
+     "AMATSU_STORM_EDGE",
+     1
+    ],
+    [
+     "ELDER_DRAGON_RESONANCE",
+     1
+    ]
+   ],
+   "specs": {
+    "수렵피리": {
+     "kind": "MELODY",
+     "label": "선율 효과",
+     "list": [
+      "방어력 UP",
+      "특수 게이지 가속【대】",
+      "공격력 UP【대】"
+     ]
+    },
+    "건랜스": {
+     "kind": "SHELL",
+     "label": "포격 타입",
+     "text": "방사형"
+    },
+    "슬래시액스": {
+     "kind": "PHIAL",
+     "label": "병 타입",
+     "text": "강격병"
+    },
+    "차지액스": {
+     "kind": "PHIAL",
+     "label": "병 타입",
+     "text": "유탄병"
+    },
+    "조충곤": {
+     "kind": "KINSECT",
+     "label": "사냥벌레",
+     "text": "비상형 · 절단 · 파워 · 보너스: 공중 제압"
+    },
+    "활": {
+     "kind": "ARROW",
+     "label": "화살 타입",
+     "list": [
+      "연사화살 Lv1",
+      "관통화살 Lv2",
+      "관통화살 Lv4",
+      "연사화살 Lv4"
+     ]
+    },
+    "라이트보우건": {
+     "kind": "AMMO",
+     "label": "탄종",
+     "rows": [
+      {
+       "n": "관통탄",
+       "c": "4",
+       "r": "대",
+       "l": "보통",
+       "color": "#5AAAFF"
+      },
+      {
+       "n": "참렬탄",
+       "c": "3",
+       "r": "특대",
+       "l": "보통",
+       "color": "#FFFFFF"
+      }
+     ]
+    },
+    "헤비보우건": {
+     "kind": "AMMO",
+     "label": "탄종",
+     "rows": [
+      {
+       "n": "저격용탄 (특수탄)",
+       "c": "",
+       "r": "",
+       "l": "",
+       "color": "#FF9A3C"
+      },
+      {
+       "n": "관통탄",
+       "c": "6",
+       "r": "중",
+       "l": "조금 느림",
+       "color": "#5AAAFF"
+      },
+      {
+       "n": "관통탄",
+       "c": "8",
+       "r": "중",
+       "l": "느림",
+       "color": "#5AAAFF"
+      }
+     ]
+    }
+   },
+   "slot": 1,
+   "def": 197,
+   "armor": {
+    "HEAD": [
+     [
+      "AMATSU_CONVERSION",
+      1
+     ],
+     [
+      "LATENT_POWER_SECRET",
+      1
+     ],
+     [
+      "SP_UNDERCURRENT",
+      2
+     ]
+    ],
+    "CHEST": [
+     [
+      "AMATSU_CONVERSION",
+      1
+     ],
+     [
+      "BRUTAL_STRIKE",
+      2
+     ]
+    ],
+    "ARMS": [
+     [
+      "AMATSU_CONVERSION",
+      1
+     ],
+     [
+      "LATENT_POWER_SECRET",
+      1
+     ],
+     [
+      "POWERHOUSE",
+      1
+     ],
+     [
+      "LOCK_ON",
+      1
+     ]
+    ],
+    "TORSO": [
+     [
+      "AMATSU_CONVERSION",
+      1
+     ],
+     [
+      "LATENT_POWER_SECRET",
+      1
+     ],
+     [
+      "LATENT_POWER",
+      2
+     ]
+    ],
+    "LEGS": [
+     [
+      "AMATSU_CONVERSION",
+      1
+     ],
+     [
+      "LATENT_POWER_SECRET",
+      1
+     ],
+     [
+      "HIGH_PERFORMANCE_WATER",
+      2
+     ]
+    ]
+   }
+  },
+  {
+   "id": "carnival26",
+   "name": "카니발 2026",
+   "series": "카니발 2026 (이벤트 · 예정)",
+   "elem": "no",
+   "sort": 9980,
+   "event": true,
+   "manual": true,
+   "weapons": "ALL",
+   "weaponElem": "no",
+   "weaponStats": [
+    2026,
+    0,
+    30
+   ],
+   "weaponNames": {
+    "대검": "Carnival 2026 대검",
+    "한손검": "Carnival 2026 한손검",
+    "쌍검": "Carnival 2026 쌍검",
+    "태도": "Carnival 2026 태도",
+    "해머": "Carnival 2026 해머",
+    "수렵피리": "Carnival 2026 수렵피리",
+    "랜스": "Carnival 2026 랜스",
+    "건랜스": "Carnival 2026 건랜스",
+    "슬래시액스": "Carnival 2026 슬래시액스",
+    "차지액스": "Carnival 2026 차지액스",
+    "조충곤": "Carnival 2026 조충곤",
+    "활": "Carnival 2026 활",
+    "라이트보우건": "Carnival 2026 라이트보우건",
+    "헤비보우건": "Carnival 2026 헤비보우건"
+   },
+   "weaponSkills": [],
+   "weaponSkillsByCat": {
+    "대검": [
+     [
+      "FOCUS",
+      5
+     ]
+    ],
+    "해머": [
+     [
+      "FOCUS",
+      5
+     ]
+    ],
+    "활": [
+     [
+      "FOCUS",
+      5
+     ]
+    ],
+    "한손검": [
+     [
+      "GUARD",
+      5
+     ]
+    ],
+    "랜스": [
+     [
+      "GUARD",
+      5
+     ]
+    ],
+    "건랜스": [
+     [
+      "GUARD",
+      5
+     ]
+    ],
+    "쌍검": [
+     [
+      "POWER_PROLONGER",
+      3
+     ]
+    ],
+    "수렵피리": [
+     [
+      "POWER_PROLONGER",
+      3
+     ]
+    ],
+    "태도": [
+     [
+      "FEAT_OF_AGILITY",
+      3
+     ]
+    ],
+    "슬래시액스": [
+     [
+      "FEAT_OF_AGILITY",
+      3
+     ]
+    ],
+    "차지액스": [
+     [
+      "FEAT_OF_AGILITY",
+      3
+     ]
+    ],
+    "조충곤": [
+     [
+      "JUMP_MASTER",
+      1
+     ]
+    ],
+    "헤비보우건": [
+     [
+      "RELOAD_SPEED",
+      2
+     ]
+    ],
+    "라이트보우건": [
+     [
+      "RECOIL_DOWN",
+      2
+     ]
+    ]
+   },
+   "specs": {
+    "수렵피리": {
+     "kind": "MELODY",
+     "label": "선율 효과",
+     "list": [
+      "열상 무효",
+      "정령왕의 가호",
+      "특수 게이지 가속【대】"
+     ]
+    },
+    "건랜스": {
+     "kind": "SHELL",
+     "label": "포격 타입",
+     "text": "방사형"
+    },
+    "슬래시액스": {
+     "kind": "PHIAL",
+     "label": "병 타입",
+     "text": "멸기병"
+    },
+    "차지액스": {
+     "kind": "PHIAL",
+     "label": "병 타입",
+     "text": "유탄병"
+    },
+    "조충곤": {
+     "kind": "KINSECT",
+     "label": "사냥벌레",
+     "text": "비상형 · 절단 · 스태미나 · 보너스: 추격 빈도 UP"
+    },
+    "활": {
+     "kind": "ARROW",
+     "label": "화살 타입",
+     "list": [
+      "연사화살 Lv1",
+      "연사화살 Lv2",
+      "관통화살 Lv3",
+      "관통화살 Lv4"
+     ]
+    },
+    "라이트보우건": {
+     "kind": "AMMO",
+     "label": "탄종",
+     "rows": [
+      {
+       "n": "수면탄",
+       "c": "3",
+       "r": "대",
+       "l": "보통",
+       "color": "#A0CDFF"
+      },
+      {
+       "n": "관통탄",
+       "c": "3",
+       "r": "대",
+       "l": "보통",
+       "color": "#5AAAFF"
+      }
+     ]
+    },
+    "헤비보우건": {
+     "kind": "AMMO",
+     "label": "탄종",
+     "rows": [
+      {
+       "n": "기관용탄 (특수탄)",
+       "c": "",
+       "r": "",
+       "l": "",
+       "color": "#FF9A3C"
+      },
+      {
+       "n": "수면탄",
+       "c": "5",
+       "r": "중",
+       "l": "느림",
+       "color": "#A0CDFF"
+      },
+      {
+       "n": "참렬탄",
+       "c": "4",
+       "r": "대",
+       "l": "느림",
+       "color": "#FFFFFF"
+      },
+      {
+       "n": "관통탄",
+       "c": "6",
+       "r": "중",
+       "l": "느림",
+       "color": "#5AAAFF"
+      }
+     ]
+    }
+   },
+   "slot": 1,
+   "def": 197,
+   "armor": {
+    "HEAD": [
+     [
+      "AUTO_JUST_DODGE",
+      1
+     ],
+     [
+      "PERFECT_EVADE_SP_CHARGE",
+      1
+     ]
+    ],
+    "CHEST": [
+     [
+      "RELOAD_SPEED",
+      1
+     ],
+     [
+      "RECOIL_DOWN",
+      1
+     ]
+    ],
+    "ARMS": [
+     [
+      "GUARD_UP",
+      1
+     ],
+     [
+      "GUARD_REFLECT",
+      1
+     ]
+    ],
+    "TORSO": [
+     [
+      "LOCK_ON",
+      1
+     ],
+     [
+      "CRITICAL_EYE",
+      1
+     ],
+     [
+      "WEAKNESS_EXPLOIT",
+      1
+     ]
+    ],
+    "LEGS": [
+     [
+      "POWERHOUSE",
+      1
+     ],
+     [
+      "CRITICAL_BOOST",
+      1
      ]
     ]
    }

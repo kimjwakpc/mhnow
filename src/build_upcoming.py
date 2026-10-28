@@ -31,6 +31,8 @@ CATKEY = {'대검': 'GREAT_SWORD', '한손검': 'SWORD_SHIELD', '쌍검': 'DUAL_
           '활': 'BOW', '라이트보우건': 'LIGHT_BOWGUN', '헤비보우건': 'HEAVY_BOWGUN'}
 PARTS = ['HEAD', 'CHEST', 'ARMS', 'TORSO', 'LEGS']
 PARTNAME = {'HEAD': '머리', 'CHEST': '몸', 'ARMS': '팔', 'TORSO': '허리', 'LEGS': '다리'}
+R_ATK = [0.8347, 0.8760, 0.9174, 0.9587, 1.0]   # build_events.py 와 같은 Lv1~5 배율 (공식 무기에서 뽑음)
+R_ELE = [0.8046, 0.8532, 0.9020, 0.9512, 1.0]
 SSORT_BASE = 940000000          # 기존 세트 뒤, 이벤트 앞
 
 # ── 미공개 스킬 보강 ──────────────────────────────────────
@@ -38,9 +40,13 @@ added_sk = []
 for s in U.get('skills', []):
     if s['kind'] in SK: continue
     mx = s.get('max', 5)
+    # levels: [{"eff": [10], "desc": "..."}, …] 를 적으면 수치가 있는 스킬로 (유출·공지로 수치를 아는 경우)
+    lv = s.get('levels')
     SK[s['kind']] = {'kind': s['kind'], 'id': -1, 'name': s['name'], 'cat': s.get('cat', 'OTHERS'),
-                     'max': mx, 'unknown': True, 'pending': True, 'sort': 99800,
-                     'levels': [{'lv': i, 'eff': [], 'cond': [], 'desc': '패치 예정 · 수치 미공개'}
+                     'max': mx, 'unknown': not lv, 'pending': True, 'sort': 99800,
+                     'levels': [{'lv': i + 1, 'eff': x.get('eff', []), 'cond': [], 'desc': x.get('desc', '')}
+                                for i, x in enumerate(lv)] if lv else
+                               [{'lv': i, 'eff': [], 'cond': [], 'desc': '패치 예정 · 수치 미공개'}
                                 for i in range(1, mx + 1)]}
     added_sk.append(s['name'])
 
@@ -49,21 +55,25 @@ for m in U.get('monsters', []):
     mid, series = m['id'], m['series']
     MON[mid] = {'id': mid, 'name': m['name'], 'weak': [], 'elem': [m.get('elem', 'no')],
                 'species': 'UNKNOWN', 'minGrade': 5, 'habitat': [], 'icon': None,
-                'sort': m.get('sort', 9000), 'pending': True}
+                'sort': m.get('sort', 9000), 'pending': True, 'manual': bool(m.get('manual'))}
 
     cats = WORDER if m.get('weapons') == 'ALL' else m['weapons']
     for c in cats:
         base = m['weaponSkills']
         sk = m.get('weaponSkillsByCat', {}).get(c, base)
-        nm = f"{m['name']} {c}"
+        nm = m.get('weaponNames', {}).get(c) or f"{m['name']} {c}"
+        # weaponStats: [공격, 속성, 회심%] = G10 Lv5. Lv1~4 는 이벤트 무기와 같은 배율로 역산
+        st = m.get('weaponStats')
+        lvs = ([[round(st[0] * R_ATK[i]), round(st[1] * R_ELE[i]) if st[1] else 0, st[2]] for i in range(5)]
+               if st else [[0, 0, 0]] * 5)
         new_w.append({
             'id': f'PENDING_{mid}_{CATKEY[c]}', 'cat': CATKEY[c], 'catName': c,
             'elem': m.get('weaponElem', 'no'), 'sid': 9400, 'skey': 'PENDING_' + mid,
             'series': series, 'mon': mid, 'icon': None,
-            'ssort': SSORT_BASE + m.get('sort', 0), 'pending': True,
-            'base': nm, 'final': nm, 'img': None,
+            'ssort': SSORT_BASE + m.get('sort', 0), 'pending': True, 'event': bool(m.get('event')),
+            'base': nm, 'final': nm, 'img': None, 'spec': m.get('specs', {}).get(c),
             'skAll': sorted({x[0] for x in sk}),
-            'g': [{'gr': 10, 'name': nm, 'lv': [[0, 0, 0]] * 5,
+            'g': [{'gr': 10, 'name': nm, 'lv': lvs,
                    'sk': [list(x) for x in sk], 'sp': None}],
         })
 
