@@ -44,6 +44,7 @@ const SKILL_CFG = {
   THUNDER_ATTACK:             { g:'D', i:0, s:1, corr:1, elem:'thunder' },
   ICE_ATTACK:                 { g:'D', i:0, s:1, corr:1, elem:'ice' },
   DRAGON_ATTACK:              { g:'D', i:0, s:1, corr:1, elem:'dragon' },
+  FIRE_ATTACK_BOOST_SECRET:   { g:'D', i:1, s:1, corr:1, elem:'fire' },   // 불속성 공격 강화·경지 — 리오레이아 아종 피리 스타일 Lv10 (2026-10)
   WATER_ATTACK_BOOST_SECRET:  { g:'D', i:1, s:1, corr:1, elem:'water' },
   THUNDER_ATTACK_BOOST_SECRET:{ g:'D', i:1, s:1, corr:1, elem:'thunder' },
   ICE_ATTACK_BOOST_SECRET:    { g:'D', i:1, s:1, corr:1, elem:'ice' },

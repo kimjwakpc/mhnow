@@ -426,7 +426,8 @@ function renderWeapon() {
     <select class="sm" id="w-gr" style="width:auto">${w.g.map(g => `<option value="${g.gr}"${g.gr === S.w.gr ? ' selected' : ''}>G${g.gr}</option>`).join('')}</select>
     <span class="mini">레벨</span>
     <select class="sm" id="w-lv" style="width:auto">${[1, 2, 3, 4, 5].map(i => `<option value="${i}"${i === S.w.lv ? ' selected' : ''}>Lv${i}</option>`).join('')}</select>
-    ${st.sk.length ? st.sk.map(([k, l]) => `<span class="chip a">${esc(skName(k))} ${l}</span>`).join('') : ''}`;
+    ${st.sk.length ? st.sk.map(([k, l]) => `<span class="chip a">${esc(skName(k))} ${l}</span>`).join('') : ''}
+    <span id="w-scsk" style="display:contents"></span>`;
   if (statsUnknown(w) || S.w.ovr) {
     const o = S.w.ovr || { atk: st.atk, ele: st.ele, crit: st.crit * 100 };
     ctl.insertAdjacentHTML('beforeend',
@@ -967,11 +968,21 @@ function openStoneBulk() {
 }
 
 /* ---------- 집계 ---------- */
+function paintStyleSkills() {                  // 무기 카드의 「스타일 Lv10 해금」 칩 — 스타일 Lv 를 움직이면 바로 바뀌게 render() 에서 부른다
+  const box = $('#w-scsk'), ws = weaponStats(); if (!box) return;
+  box.innerHTML = ws ? styleSkills(ws.w, ws.g.gr, S.style.lv).map(x => `<span class="chip ${x.on ? 'g' : ''}" style="${x.on ? '' : 'opacity:.55'}"
+    title="스타일 강화 Lv${x.sc} 에 해금${x.on ? ' — 적용 중' : ' — 지금 스타일 Lv' + (S.style.lv || 0) + ', 미적용'}">${esc(skName(x.k))} ${x.l} · 스타일 Lv${x.sc}</span>`).join('') : '';
+}
+/* 스타일 강화 Lv N 에 해금되는 무기 스킬 — [{k, l, sc, gr, on}] (그 등급에서 해당되는 것만, on = 지금 스타일 Lv 충족) */
+function styleSkills(w, gr, styleLv) {
+  return (w?.scSk || []).filter(x => gr >= x[3]).map(([k, l, sc, u]) => ({ k, l, sc, gr: u, on: (styleLv || 0) >= sc }));
+}
 function aggregate() {
   const raw = {};
   const add = (k, l) => { raw[k] = (raw[k] || 0) + l; };
   const ws = weaponStats();
   if (ws) ws.sk.forEach(([k, l]) => add(k, l));
+  if (ws) styleSkills(ws.w, ws.g.gr, S.style.lv).forEach(x => { if (x.on) add(x.k, x.l); });
   PARTS.forEach(p => {
     const a = A_BY_ID[S.a[p].id]; if (!a) return;
     const g = a.g.find(x => x.gr === S.a[p].gr); if (!g) return;
@@ -998,6 +1009,7 @@ function render() {
     $('#res-detail').innerHTML = ''; renderCalc(null); renderAilment(null); updateSaveUI(); paintDock(null); return;
   }
   const r = calc(ws, agg);
+  paintStyleSkills();
   if (W_BY_ID[S.w.id]?.spec?.kind === 'AMMO') renderSpec(W_BY_ID[S.w.id]);
   renderSkills(agg, r.blocked);
   renderCalc(r, ws);
@@ -1631,7 +1643,9 @@ function tipWeapon(w, cur) {
   return `<div class="tip-hd"><b>${esc(name)}</b>${tipBadges(w)}</div>
     <div class="tip-sub">${w.catName} · ${esc(w.series)} · ${META.elementNames[w.elem] || '무속성'}</div>
     <div class="tip-stat">G${g.gr} Lv${lv} · 공격 <b>${fmt(atk)}</b>${ele ? ` · 속성 <b>${fmt(ele)}</b>` : ''}${crit ? ` · 회심 <b>${fmt(crit)}%</b>` : ''}</div>
-    ${tipSkills(g.sk, '무기 스킬')}${tipSpec(w)}
+    ${tipSkills(g.sk, '무기 스킬')}${styleSkills(w, g.gr, 99).length ? `<div class="tip-sec"><div class="tip-lbl">스타일 강화 해금 스킬</div>${
+      styleSkills(w, g.gr, cur ? S.style.lv : 0).map(x => `<div class="tip-sk"><b>${esc(skName(x.k))}</b> <span class="tip-lv">Lv${x.l}</span>
+        <span class="tip-dim">스타일 Lv${x.sc} 부터${cur ? (x.on ? ' · 적용 중' : ' · 미적용') : ''}</span></div>`).join('')}</div>` : ''}${tipSpec(w)}
     <div class="tip-sec"><div class="tip-lbl">스타일 강화</div>${prof ? '<div class="tip-ok">가능</div>' : '<div class="tip-dim">불가능</div>'}${
       cur && prof ? (() => { const b = styleBonus(S.style, w.id);
         return b.atk || b.ele || b.crit ? `<div class="tip-stat" style="margin-top:2px">적용 시 공격 <b>${fmt(atk + b.atk)}</b>${ele || b.ele ? ` · 속성 <b>${fmt(ele + b.ele)}</b>` : ''}${crit || b.crit ? ` · 회심 <b>${fmt(crit + b.crit * 100)}%</b>` : ''}</div>` : ''; })() : ''}</div>`;

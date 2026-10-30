@@ -42,7 +42,8 @@ ALIAS = {'攻擊活化': '공격 활성', '真本領': '진가 발휘', '完美�
          '攻擊增強【會心】': '공격 강화【회심】', 'SP計量表加速【防禦】': '특수 게이지 가속【가드】',
          '跳躍鐵人': '점프 철인',
          # mhn.quest 에 한국어 번역이 아직 없는 신규 스킬 — 우리 이름(유출·공지 기준)으로 붙인다 (2026-10-30)
-         '嵐龍的驟天': '폭풍룡의 취천', '嵐龍的嵐渦刃': '폭풍룡의 폭풍 칼날', '力量解放．境界': '힘의 해방·경지'}
+         '嵐龍的驟天': '폭풍룡의 취천', '嵐龍的嵐渦刃': '폭풍룡의 폭풍 칼날', '力量解放．境界': '힘의 해방·경지',
+         '火屬性攻擊強化．境界': '불속성 공격 강화·경지'}
 for zh, ko in ALIAS.items():
     if zh not in zh2kind and norm(ko) in sk_by_name: zh2kind[zh] = sk_by_name[norm(ko)]
 
@@ -175,6 +176,35 @@ for mon in pend_mons:
         SK[k]['alt'] = 'mhn.quest'
         new_sk.append(SK[k]['name'])
     done.append(MON.get(mon, {}).get('name', mon))
+
+# ── 스타일 강화 Lv N 에 해금되는 무기 스킬 (mhn.quest 의 sc 표시) ─────────────
+# 공식 가이드 · 나우칼에는 이 조건이 없다 (공식 가이드는 그냥 무기 스킬로 적기도 함 — 흑디아 파괴왕·경지).
+# weapon['scSk'] = [[kind, lv, 스타일Lv, 등급]] 로 옮기고, 같은 스킬이 g.sk 에 있으면 그 등급부터는 뺀다.
+sc_added = []
+for mon, qk in q_by_mon.items():
+    E = Q['eq'].get(qk)
+    if not isinstance(E, dict): continue
+    for w in [x for x in W if x.get('mon') == mon]:
+        qcat = CAT2Q.get(w['catName'])
+        lst = E.get(qcat) if qcat in E else E.get('weapon')
+        sc = []
+        for e in lst or []:
+            if not e.get('sc'): continue
+            k = zh2kind.get(e['skill'])
+            if not k: print('   스타일 해금 스킬 이름 못 찾음:', e['skill']); continue
+            u = e['unlock'][0] if isinstance(e['unlock'], list) else e['unlock']
+            l = e['lv'][-1] if isinstance(e['lv'], list) else e['lv']
+            sc.append([k, l, e['sc'], u])
+            for g in w['g']:
+                if g['gr'] >= u: g['sk'] = [x for x in g['sk'] if x[0] != k]
+        if sc:
+            w['scSk'] = sc
+            w['skAll'] = sorted(set(w['skAll']) | {x[0] for x in sc})
+            sc_added.append((MON[mon]['name'], ' · '.join(SK[x[0]]['name'] for x in sc)))
+if sc_added:
+    from collections import Counter
+    print(f'스타일 강화 해금 스킬 — 무기 {len(sc_added)}개:',
+          ', '.join(f'{m} {sk}({n})' for (m, sk), n in sorted(Counter(sc_added).items())))
 
 for n, d in [('weapons', W), ('armor', A), ('skills', SK)]:
     json.dump(d, open(OUT + n + '.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
