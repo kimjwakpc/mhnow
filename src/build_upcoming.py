@@ -55,7 +55,7 @@ for m in U.get('monsters', []):
     mid, series = m['id'], m['series']
     MON[mid] = {'id': mid, 'name': m['name'], 'weak': [], 'elem': [m.get('elem', 'no')],
                 'species': 'UNKNOWN', 'minGrade': 5, 'habitat': [], 'icon': None,
-                'sort': m.get('sort', 9000), 'pending': True, 'manual': bool(m.get('manual'))}
+                'sort': m.get('sort', 9000), 'pending': True, 'manual': bool(m.get('manual')), 'mhnq': m.get('mhnquest')}
 
     cats = WORDER if m.get('weapons') == 'ALL' else m['weapons']
     for c in cats:

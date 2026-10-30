@@ -40,7 +40,9 @@ ALIAS = {'攻擊活化': '공격 활성', '真本領': '진가 발휘', '完美�
          '鋼龍的凍風': '강룡의 얼음바람', '冰呪龍的冰纏': '빙룡의 얼음 갑옷', '鬼火纏身': '귀화 망토',
          '毒屬性強化': '독속성 강화', '麻痺屬性強化': '마비속성 강화', '睡眠攻擊強化': '수면속성 강화',
          '攻擊增強【會心】': '공격 강화【회심】', 'SP計量表加速【防禦】': '특수 게이지 가속【가드】',
-         '跳躍鐵人': '점프 철인'}
+         '跳躍鐵人': '점프 철인',
+         # mhn.quest 에 한국어 번역이 아직 없는 신규 스킬 — 우리 이름(유출·공지 기준)으로 붙인다 (2026-10-30)
+         '嵐龍的驟天': '폭풍룡의 취천', '嵐龍的嵐渦刃': '폭풍룡의 폭풍 칼날', '力量解放．境界': '힘의 해방·경지'}
 for zh, ko in ALIAS.items():
     if zh not in zh2kind and norm(ko) in sk_by_name: zh2kind[zh] = sk_by_name[norm(ko)]
 
@@ -57,6 +59,8 @@ RELOAD = ['빠름', '보통', '조금 느림', '느림']
 KIN_TYPE = {'共鬥': '공투형', '飛翔': '비상형', '粉塵': '가루형'}
 KIN_PERF = {'迅速': '퀵', '耐力': '스태미나', '力量': '파워'}
 KIN_ATK = {'打擊': '타격', '切斷': '절단'}
+KIN_BONUS = {'追擊頻率UP': '추격 빈도 UP', '制空': '공중 제압'}
+HEAVY_SP = {0: '기관용탄', 1: '저격용탄'}          # heavy-gun-sp — 헤비보우건 특수탄
 
 at = lambda arr, gr, lv: (arr[(gr - 1) * 5 + (lv - 1)] if arr else 0)
 
@@ -92,6 +96,7 @@ def spec_of(S, cat):
     if cat == '조충곤' and S.get('kinsect'):
         k = S['kinsect']
         parts = [KIN_TYPE.get(k.get('type')), KIN_PERF.get(k.get('performance')), KIN_ATK.get(k.get('attack'))]
+        if k.get('bonus'): parts.append('보너스: ' + KIN_BONUS.get(k['bonus'], k['bonus']))
         return {'kind': 'KINSECT', 'label': '사냥벌레', 'text': ' · '.join(x for x in parts if x)}
     if cat in ('라이트보우건', '헤비보우건'):
         rows = S.get('ammo') if cat == '라이트보우건' else S.get('heavy-ammo')
@@ -102,6 +107,8 @@ def spec_of(S, cat):
             rc = RECOIL[r[2]] if len(r) > 2 and r[2] is not None and r[2] < len(RECOIL) else ''
             rl = RELOAD[r[3]] if len(r) > 3 and r[3] is not None and r[3] < len(RELOAD) else ''
             out.append({'n': KO['ammo'].get(t, t), 'c': str(cap), 'r': rc, 'l': rl, 'color': None})
+        if cat == '헤비보우건' and S.get('heavy-gun-sp') in HEAVY_SP:
+            out.insert(0, {'n': HEAVY_SP[S['heavy-gun-sp']] + ' (특수탄)', 'c': '', 'r': '', 'l': '', 'color': '#FF9A3C'})
         return {'kind': 'AMMO', 'label': '탄종', 'rows': out}
     return None
 
@@ -111,6 +118,8 @@ q_by_mon = {}
 for qk, ko in KO['monster-name'].items():
     m = mon_by_name.get(norm(ko))
     if m and qk in Q['set'] and qk in Q['eq']: q_by_mon[m] = qk
+for m, v in MON.items():                           # 이름이 달라 자동으로 못 붙는 세트 (카니발 2026 ↔ carnival-26)
+    if v.get('mhnq') and v['mhnq'] in Q['set'] and v['mhnq'] in Q['eq']: q_by_mon[m] = v['mhnq']
 
 pend_mons = sorted({x['mon'] for x in W + A if x.get('pending') and x.get('mon')})
 filled_w = filled_a = 0
@@ -144,6 +153,7 @@ for mon in pend_mons:
 
     for a in [x for x in A if x.get('pending') and x['mon'] == mon]:
         piece = PIECE[a['cat']]
+        if piece not in E: continue                # mhn.quest 에 그 부위가 아직 없음 (헬러윈 2026 은 다리만) — 손으로 적은 값 유지
         slots = (E.get('slot') or {}).get(piece, [])
         a['g'] = [{'gr': gr, 'slot': sum(1 for u in slots if gr >= u),
                    'sk': skills_at(E.get(piece), gr),
