@@ -54,7 +54,7 @@ new_w, new_a = [], []
 for m in U.get('monsters', []):
     mid, series = m['id'], m['series']
     MON[mid] = {'id': mid, 'name': m['name'], 'weak': [], 'elem': [m.get('elem', 'no')],
-                'species': 'UNKNOWN', 'minGrade': 5, 'habitat': [], 'icon': None,
+                'species': 'UNKNOWN', 'minGrade': 5, 'habitat': [], 'icon': m.get('icon'),
                 'sort': m.get('sort', 9000), 'pending': True, 'manual': bool(m.get('manual')), 'mhnq': m.get('mhnquest')}
 
     cats = WORDER if m.get('weapons') == 'ALL' else m['weapons']
@@ -69,7 +69,7 @@ for m in U.get('monsters', []):
         new_w.append({
             'id': f'PENDING_{mid}_{CATKEY[c]}', 'cat': CATKEY[c], 'catName': c,
             'elem': m.get('weaponElem', 'no'), 'sid': 9400, 'skey': 'PENDING_' + mid,
-            'series': series, 'mon': mid, 'icon': None,
+            'series': series, 'mon': mid, 'icon': ('mon:' + mid) if m.get('icon') else None,   # 실제 그림은 몬스터에만 한 번 (app.js 가 풀어 씀)
             'ssort': SSORT_BASE + m.get('sort', 0), 'pending': True, 'event': bool(m.get('event')),
             'base': nm, 'final': nm, 'img': None, 'spec': m.get('specs', {}).get(c),
             'skAll': sorted({x[0] for x in sk}),
@@ -85,7 +85,7 @@ for m in U.get('monsters', []):
         new_a.append({
             'id': f'PENDING_{mid}_{p}', 'cat': p, 'catName': PARTNAME[p],
             'sid': 9400, 'skey': 'PENDING_' + mid, 'series': series,
-            'mon': mid, 'icon': None, 'ssort': SSORT_BASE + m.get('sort', 0),
+            'mon': mid, 'icon': ('mon:' + mid) if m.get('icon') else None, 'ssort': SSORT_BASE + m.get('sort', 0),
             'name': m.get('armorNames', {}).get(p, m['name']), 'event': bool(m.get('event')), 'pending': True,
             'skAll': sorted({x[0] for x in sk}),
             'g': [{'gr': 10, 'slot': m.get('slot', 1), 'sk': [list(x) for x in sk], 'def': [m.get('def', 197)] * 5}],

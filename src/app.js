@@ -3,6 +3,8 @@ const D = window.__DATA__;
 const SKILLS = D.skills, WEAPONS = D.weapons, ARMOR = D.armor,
       DRIFT = D.driftstones, MONS = D.monsters, META = D.meta, RATES = D.rates;
 window.__STYLES__ = D.styles;
+// 예정 장비 아이콘은 용량을 아끼려고 몬스터에만 한 번 담고, 장비에는 "mon:<id>" 로 가리킨다
+[...WEAPONS, ...ARMOR].forEach(x => { if (typeof x.icon === 'string' && x.icon.startsWith('mon:')) x.icon = MONS[x.icon.slice(4)]?.icon || null; });
 
 /* ---- 스킬 매핑 오버라이드 (사용자가 고칠 수 있음) ---- */
 const CFG_LS = 'mhnow_cfg_v1';
