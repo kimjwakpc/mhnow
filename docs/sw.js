@@ -1,5 +1,5 @@
 /* 오프라인 캐시 — 버전이 바뀌면 옛 캐시를 지운다 */
-const V = 'mhnow-fb513230c6';
+const V = 'mhnow-feffb6e04c';
 const ASSETS = ['./', './index.html', './manifest.webmanifest',
                 './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {

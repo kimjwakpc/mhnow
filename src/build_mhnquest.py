@@ -90,7 +90,8 @@ def spec_of(S, cat):
         return {'kind': 'PHIAL', 'label': '병 타입', 'text': KO['sa-phial'].get(S['sa-phial'], S['sa-phial'])}
     if cat == '수렵피리' and S.get('songs'):
         return {'kind': 'MELODY', 'label': '선율 효과',
-                'list': [KO['songs'].get(v, [v])[0] for v in S['songs'].values()]}
+                'list': [re.sub(r'(?<=\S)UP', ' UP', KO['songs'].get(v, [v])[0].replace('SP게이지', '특수 게이지'))
+                         for v in S['songs'].values()]}   # 공식 표기로 (SP게이지 → 특수 게이지, 공격력UP → 공격력 UP)
     if cat == '활' and S.get('arrow'):
         return {'kind': 'ARROW', 'label': '화살 타입',
                 'list': [f"{KO['arrow'].get(t, t)}화살 Lv{n}" for t, n in S['arrow']]}
@@ -205,6 +206,18 @@ if sc_added:
     from collections import Counter
     print(f'스타일 강화 해금 스킬 — 무기 {len(sc_added)}개:',
           ', '.join(f'{m} {sk}({n})' for (m, sk), n in sorted(Counter(sc_added).items())))
+
+# ── 이벤트 무기 고유 정보 — 나우칼에서 온 이벤트 무기는 탄종 · 선율 · 병 · 벌레 · 화살 · 포격이 비어 있어 mhn.quest 로 채운다
+EVENT_MHNQ = {'Carnival2026 (이벤트)': 'carnival-26', '카니발 2024 (이벤트)': 'carnival-24', '호프 (이벤트)': 'hope',
+              '설날 (이벤트)': 'lunar-25', '헬러윈 (이벤트)': 'halloween-25', '트리 2025 (이벤트)': 'winter-25',
+              '봄 2026 (이벤트)': 'spring-26', '여름 축제 2026 (이벤트)': 'summer-26', '토이 (이벤트)': 'easter-25'}
+spec_filled = []
+for w in W:
+    qk = EVENT_MHNQ.get(w.get('series'))
+    if not qk or w.get('spec') or qk not in Q['set']: continue
+    sp = spec_of(Q['set'][qk], w['catName'])
+    if sp: w['spec'] = sp; spec_filled.append(w['final'])
+if spec_filled: print(f'이벤트 무기 고유 정보 채움 {len(spec_filled)}개')
 
 # ── 방어력이 비어 있는 방어구 (엑셀에서 온 이벤트 방어구) — 방어력은 등급별 공통값이라 mhn.quest 표로 채운다
 def_filled = 0

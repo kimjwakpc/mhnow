@@ -73,6 +73,9 @@ PROF_KO = {
     'Ailment_6': '상태이상 무기 3 (바젤기우스)',
     'Element_6': '속성 무기 6 (타마미츠네)',
     'AzureRathalos': '리오레우스 아종', 'BlackDiables': '흑디아블로스',
+    'CoralPukei_Water': '푸케푸케 아종 (물)', 'PinkRathian_Poison': '리오레이아 아종 (독)',
+    'PinkRathian_Fire': '리오레이아 아종 (불)', 'PinkRathian_Dragon': '리오레이아 아종 (용)',
+    'Narugacuga': '나르가쿠르가', 'Carnival2026': '카니발 2026 (최대 Lv5)',
 }
 ed = B['equipDetails']
 profiles = {}
