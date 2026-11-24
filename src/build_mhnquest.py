@@ -227,6 +227,15 @@ for a in A:
             g['def'] = [at(Q['armorVal'], g['gr'], l) for l in range(1, 6)]; def_filled += 1
 if def_filled: print(f'방어력 채움 (등급별 공통값): 방어구 {def_filled}개 등급')
 
+# ── 이미 출시된 장비 (upcoming.json 의 released) — mhn.quest 로 채울 것은 채웠으니 「예정」 표시를 뗀다
+rel = 0
+for x in W + A:
+    if x.get('released') and x.pop('pending', None): rel += 1
+for v in MON.values():
+    if v.get('released'): v.pop('pending', None)
+if rel: print(f'출시된 장비 (예정 표시 없음): {rel}개 부위')
+json.dump(MON, open(OUT + 'monsters.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+
 for n, d in [('weapons', W), ('armor', A), ('skills', SK)]:
     json.dump(d, open(OUT + n + '.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 

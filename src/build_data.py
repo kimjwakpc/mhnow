@@ -208,6 +208,7 @@ for aid, v in A['armor'].items():
 
 # 이벤트 세트 (엑셀에서 보강) — 엑셀을 못 읽으면 지난번에 뽑아 둔 data/event_armor.json 사용
 EVENT_CACHE = OUT + 'event_armor.json'
+EVENT_GONE = {'할로윈 세트'}          # 게임에서 없어진 이벤트 세트 (할로윈 → 할로윈 2026 세트로 편입)
 n_before = len(armor)
 try:
     import openpyxl
@@ -215,7 +216,8 @@ try:
     ws = wb['장비세팅']
     norm = lambda s: re.sub(r'[\s\[\]【】［］]', '', unicodedata.normalize('NFKC', str(s)))
     n2k = {norm(v['name']): k for k, v in skills.items()}
-    EVENTS = {'설2024', '할로윈', '해피뉴이어', '2024카니발', '이스터에그', '2025썸머'}
+    # 할로윈(머리 · 허리)은 2026-11 「할로윈 2026 세트」로 스킬이 재편돼 편입 — 기존 것은 게임에서 없어짐 (upcoming.json 에서 관리)
+    EVENTS = {'설2024', '해피뉴이어', '2024카니발', '이스터에그', '2025썸머'}
     starts = [r for r in range(13, 305) if ws.cell(r, 1).value] + [305]
     cols = [(1, 'HEAD'), (5, 'CHEST'), (9, 'ARMS'), (13, 'TORSO'), (17, 'LEGS')]
     for i in range(len(starts) - 1):
@@ -240,7 +242,7 @@ try:
 except Exception as e:
     del armor[n_before:]
     if os.path.exists(EVENT_CACHE):
-        armor += json.load(open(EVENT_CACHE, encoding='utf-8'))
+        armor += [x for x in json.load(open(EVENT_CACHE, encoding='utf-8')) if x['series'] not in EVENT_GONE]
         print('이벤트 세트: 엑셀 대신 data/event_armor.json 사용 (%s)' % e)
     else:
         print('이벤트 세트 스킵:', e)

@@ -20,9 +20,10 @@ SK = json.load(open(OUT + 'skills.json', encoding='utf-8'))
 MON = json.load(open(OUT + 'monsters.json', encoding='utf-8'))
 
 # 재실행 안전 — 이전 결과 제거
-W = [x for x in W if not x.get('pending')]
-A = [x for x in A if not x.get('pending')]
-MON = {k: v for k, v in MON.items() if not v.get('pending')}
+# 지난번에 이 스크립트가 넣은 것(upcoming)을 먼저 지운다 — 출시돼서 pending 이 빠진 것도 포함
+W = [x for x in W if not x.get('upcoming') and not x.get('pending')]
+A = [x for x in A if not x.get('upcoming') and not x.get('pending')]
+MON = {k: v for k, v in MON.items() if not v.get('upcoming') and not v.get('pending')}
 
 WORDER = U['_무기종류키']
 CATKEY = {'대검': 'GREAT_SWORD', '한손검': 'SWORD_SHIELD', '쌍검': 'DUAL_BLADES', '태도': 'LONG_SWORD',
@@ -55,7 +56,8 @@ for m in U.get('monsters', []):
     mid, series = m['id'], m['series']
     MON[mid] = {'id': mid, 'name': m['name'], 'weak': [], 'elem': [m.get('elem', 'no')],
                 'species': 'UNKNOWN', 'minGrade': 5, 'habitat': [], 'icon': m.get('icon'),
-                'sort': m.get('sort', 9000), 'pending': True, 'manual': bool(m.get('manual')), 'mhnq': m.get('mhnquest')}
+                'sort': m.get('sort', 9000), 'pending': True, 'upcoming': True, 'released': bool(m.get('released')),
+                'manual': bool(m.get('manual')), 'mhnq': m.get('mhnquest')}
 
     cats = WORDER if m.get('weapons') == 'ALL' else m['weapons']
     for c in cats:
@@ -70,7 +72,7 @@ for m in U.get('monsters', []):
             'id': f'PENDING_{mid}_{CATKEY[c]}', 'cat': CATKEY[c], 'catName': c,
             'elem': m.get('weaponElem', 'no'), 'sid': 9400, 'skey': 'PENDING_' + mid,
             'series': series, 'mon': mid, 'icon': ('mon:' + mid) if m.get('icon') else None,   # 실제 그림은 몬스터에만 한 번 (app.js 가 풀어 씀)
-            'ssort': SSORT_BASE + m.get('sort', 0), 'pending': True, 'event': bool(m.get('event')),
+            'ssort': SSORT_BASE + m.get('sort', 0), 'pending': True, 'upcoming': True, 'released': bool(m.get('released')), 'event': bool(m.get('event')),
             'base': nm, 'final': nm, 'img': None, 'spec': m.get('specs', {}).get(c),
             'skAll': sorted({x[0] for x in sk}),
             'g': [{'gr': 10, 'name': nm, 'lv': lvs,
@@ -86,7 +88,7 @@ for m in U.get('monsters', []):
             'id': f'PENDING_{mid}_{p}', 'cat': p, 'catName': PARTNAME[p],
             'sid': 9400, 'skey': 'PENDING_' + mid, 'series': series,
             'mon': mid, 'icon': ('mon:' + mid) if m.get('icon') else None, 'ssort': SSORT_BASE + m.get('sort', 0),
-            'name': m.get('armorNames', {}).get(p, m['name']), 'event': bool(m.get('event')), 'pending': True,
+            'name': m.get('armorNames', {}).get(p, m['name']), 'event': bool(m.get('event')), 'pending': True, 'upcoming': True, 'released': bool(m.get('released')),
             'skAll': sorted({x[0] for x in sk}),
             'g': [{'gr': 10, 'slot': m.get('slot', 1), 'sk': [list(x) for x in sk], 'def': [m.get('def', 197)] * 5}],
         })
