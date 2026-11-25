@@ -2942,12 +2942,25 @@ function initTip() {
 
 /* =========================================================
    세팅 이미지 — 무기 · 방어구(몬스터 이름) · 스킬 · 표류석 · 기댓값을 한 장으로 그려 클립보드에 복사 (카톡 공유용)
-   외부 그림(공식 아이콘)은 캔버스를 오염시켜 복사가 막히므로 글자만 그린다.
+   몬스터 아이콘은 crossOrigin 으로 불러와 그린다 — 서버가 허용하지 않거나 못 불러오면 그 아이콘만 빼고 그린다
+   (허용 안 된 그림을 그리면 캔버스가 오염돼 복사 자체가 막히므로, 불러오기에 실패한 그림은 아예 쓰지 않는다).
    ========================================================= */
 const SHOT_FONT = '"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif';
 const SHOT_C = { bg: '#0b0e13', panel: '#141922', line: '#262f3c', txt: '#eceff4', dim: '#8e99aa', dim2: '#6b7586',
   accent: '#f2a93b', good: '#6fcf7e', bad: '#ee6a5e', chip: '#1c2330', chipOn: '#183022', stone: '#2a2140' };
 const monOf = x => (x && MONS[x.mon]?.name) || (x ? x.series.replace(/ 세트$/, '') : '');
+const iconOf = x => (x && (x.icon || MONS[x.mon]?.icon)) || null;
+const SHOT_IMG = new Map();                    // url → Promise<Image|null> (한 번 불러온 아이콘은 다시 쓰기)
+function shotImg(url) {
+  if (!url) return Promise.resolve(null);
+  if (!SHOT_IMG.has(url)) SHOT_IMG.set(url, new Promise(res => {
+    const im = new Image(); if (!url.startsWith('data:')) im.crossOrigin = 'anonymous';
+    const t = setTimeout(() => res(null), 5000);
+    im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); SHOT_IMG.delete(url); res(null); };
+    im.src = url;
+  }));
+  return SHOT_IMG.get(url);
+}
 function shotData() {
   const ws = weaponStats(), agg = aggregate(), r = ws ? calc(ws, agg) : null;
   const b = curBuild();
@@ -2956,7 +2969,7 @@ function shotData() {
     const w = ws.w, st = styleBonus(S.style, w.id), prof = styleProfile(w.id);
     const eleName = (META.elementNames[ws.elem] || '').replace('속성', '');
     d.weapon = {
-      mon: monOf(w), name: ws.name, cat: w.catName, gr: `G${ws.g.gr} Lv${S.w.lv}`,
+      icon: iconOf(w), mon: monOf(w), name: ws.name, cat: w.catName, gr: `G${ws.g.gr} Lv${S.w.lv}`,
       stat: [`공 ${fmt(ws.atk + st.atk)}`, ws.ele || st.ele ? `${eleName || '속성'} ${fmt(ws.ele + st.ele)}` : null,
              `회심 ${Math.round((ws.crit + st.crit) * 100)}%`].filter(Boolean).join(' · '),
       style: prof && S.style.lv ? `스타일 Lv${S.style.lv}` : (st.atk || st.ele || st.crit ? '스타일 직접 입력' : ''),
@@ -2967,7 +2980,7 @@ function shotData() {
   d.armor = PARTS.map(p => {
     const a = A_BY_ID[S.a[p].id]; if (!a) return { part: PARTNAME[p], none: true };
     const g = a.g.find(x => x.gr === S.a[p].gr) || a.g[a.g.length - 1];
-    return { part: PARTNAME[p], mon: monOf(a), name: a.name !== monOf(a) ? a.name : '', gr: `G${g.gr}`,
+    return { part: PARTNAME[p], icon: iconOf(a), mon: monOf(a), name: a.name !== monOf(a) ? a.name : '', gr: `G${g.gr}`,
       sk: g.sk.map(([k, l]) => `${skName(k)} ${l}`),
       stones: (S.a[p].stones || []).filter(Boolean).map(x => `${(x.color || '').replace('색', '')} ${skName(x.kind)}${x.lv > 1 ? ' ' + x.lv : ''}`) };
   });
@@ -2978,8 +2991,16 @@ function shotData() {
   if (ws) { const a = ailmentChance(ws.elem, agg.capped); if (a) d.ail = `${(META.elementNames[ws.elem] || '').replace('속성', '')} 축적 ${(a.normal * 100).toFixed(1)}%${a.sneak ? ` · 뒤에서 ${(a.back * 100).toFixed(1)}%` : ''}`; }
   return d;
 }
-function shotCanvas() {
+async function shotCanvas() {
   const d = shotData(), W = 720, P = 28, SC = 2;
+  const urls = [d.weapon?.icon, ...d.armor.map(a => a.icon)];
+  const imgs = new Map((await Promise.all(urls.map(u => shotImg(u)))).map((im, i) => [urls[i], im]));
+  const icon = (ctx, real, url, x, yy, sz) => {
+    if (!real) return;
+    const im = url && imgs.get(url);
+    ctx.fillStyle = SHOT_C.panel; ctx.beginPath(); ctx.roundRect(x, yy, sz, sz, 8); ctx.fill();
+    if (im) { ctx.save(); ctx.beginPath(); ctx.roundRect(x, yy, sz, sz, 8); ctx.clip(); ctx.drawImage(im, x, yy, sz, sz); ctx.restore(); }
+  };
   const draw = (ctx, real) => {
     let y = P;
     const font = (sz, wt = 500) => { ctx.font = `${wt} ${sz}px ${SHOT_FONT}`; };
@@ -2998,9 +3019,6 @@ function shotCanvas() {
       return items.length ? row + h : yy;
     };
     rect(0, 0, W, 99999, SHOT_C.bg, 0);
-    // 머리말
-    text('몬헌 나우 장비 세팅', P, y + 13, SHOT_C.dim, 13, 600); text(d.date, W - P, y + 13, SHOT_C.dim2, 13, 500, 'right'); y += 24;
-    text(fit(d.title, W - 2 * P, 24, 800), P, y + 24, SHOT_C.txt, 24, 800); y += 40;
     // 기댓값
     rect(P, y, W - 2 * P, d.r ? 86 + (d.ail ? 22 : 0) : 50, SHOT_C.panel, 12);
     if (d.r) {
@@ -3016,11 +3034,12 @@ function shotCanvas() {
     // 무기
     head('무기');
     if (d.weapon) {
-      const wd = d.weapon; let x = P;
-      x += text(wd.mon, x, y + 19, SHOT_C.txt, 18, 800) + 10;
-      text(fit(`${wd.name} · ${wd.cat}`, W - P - x, 15, 500), x, y + 19, SHOT_C.dim, 15, 500); y += 30;
-      text([wd.gr, wd.stat, wd.style].filter(Boolean).join('  ·  '), P, y + 15, SHOT_C.txt, 14, 600); y += 26;
-      if (wd.sk.length) y = chips(wd.sk.map(t => ({ t })), P, y, W - 2 * P) + 6;
+      const wd = d.weapon, IX = P + 58; let x = IX;
+      icon(ctx, real, wd.icon, P, y, 48);
+      x += text(wd.mon, x, y + 20, SHOT_C.txt, 18, 800) + 10;
+      text(fit(`${wd.name} · ${wd.cat}`, W - P - x, 15, 500), x, y + 20, SHOT_C.dim, 15, 500);
+      text([wd.gr, wd.stat, wd.style].filter(Boolean).join('  ·  '), IX, y + 44, SHOT_C.txt, 14, 600); y += 58;
+      if (wd.sk.length) y = chips(wd.sk.map(t => ({ t })), IX, y, W - P - IX) + 6;
     } else { text('—', P, y + 16, SHOT_C.dim2, 14); y += 24; }
     y += 10;
     // 방어구
@@ -3030,20 +3049,19 @@ function shotCanvas() {
       y += 10;
       text(a.part, P, y + 17, SHOT_C.dim, 13, 700);
       if (a.none) { text('—', P + 46, y + 17, SHOT_C.dim2, 15); y += 30; continue; }
-      let x = P + 46;
+      const AX = P + 46 + 44; let x = AX;
+      icon(ctx, real, a.icon, P + 46, y, 36);
       x += text(a.mon, x, y + 17, SHOT_C.txt, 16, 800) + 8;
       text(fit([a.name, a.gr].filter(Boolean).join(' · '), W - P - x, 13, 500), x, y + 17, SHOT_C.dim2, 13, 500);
       y += 26;
       const items = [...a.sk.map(t => ({ t })), ...a.stones.map(t => ({ t: '◆ ' + t, bg: SHOT_C.stone, c: '#d6c4ff' }))];
-      y = (items.length ? chips(items, P + 46, y, W - 2 * P - 46, 12.5) : y) + 8;
+      y = Math.max(items.length ? chips(items, AX, y, W - P - AX, 12.5) : y, y + 10) + 8;
     }
     y += 6;
     // 집계 스킬
     head('발동 스킬');
-    y = chips(d.skills.map(s => ({ t: s.t + (s.off ? ' (미발동)' : ''), bg: s.on ? SHOT_C.chipOn : SHOT_C.chip, c: s.on ? SHOT_C.good : (s.off ? SHOT_C.dim2 : SHOT_C.dim), b: s.on })), P, y, W - 2 * P) + 14;
-    text('초록 = 딜 반영 스킬 · ◆ = 표류석', P, y + 12, SHOT_C.dim2, 11.5, 500);
-    text('kimjwakpc.github.io/mhnow', W - P, y + 12, SHOT_C.dim2, 11.5, 500, 'right');
-    return y + 12 + P;
+    y = chips(d.skills.map(s => ({ t: s.t + (s.off ? ' (미발동)' : ''), bg: s.on ? SHOT_C.chipOn : SHOT_C.chip, c: s.on ? SHOT_C.good : (s.off ? SHOT_C.dim2 : SHOT_C.dim), b: s.on })), P, y, W - 2 * P);
+    return y + P;
   };
   const m = document.createElement('canvas').getContext('2d');
   const H = Math.ceil(draw(m, false));
@@ -3053,8 +3071,8 @@ function shotCanvas() {
 }
 // 버튼 → 바로 클립보드에 복사 (사파리는 사용자 동작 안에서 ClipboardItem 을 만들어야 해서 Promise 로 넘긴다) + 미리보기 창
 function shotCopy() {
-  let cv; try { cv = shotCanvas(); } catch (e) { toast('이미지를 만들지 못했습니다'); return; }
-  const blobP = new Promise(res => cv.toBlob(res, 'image/png'));
+  const cvP = shotCanvas();
+  const blobP = cvP.then(cv => new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png'); } catch (e) { rej(e); } }));
   const canClip = !!(navigator.clipboard?.write && window.ClipboardItem && window.isSecureContext);
   const copied = canClip
     ? navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(() => true, () => false)
@@ -3062,13 +3080,16 @@ function shotCopy() {
   document.body.style.overflow = 'hidden';
   $('#modal-root').innerHTML = `<div class="modal" id="mo"><div class="modal-in" style="max-width:560px">
     <div class="modal-hd"><h3>세팅 이미지</h3><button class="btn gh" style="margin-left:auto" id="mo-x">✕ 닫기</button></div>
-    <div class="modal-bd"><img class="shot-prev" src="${cv.toDataURL('image/png')}" alt="세팅 이미지">
-      <p class="shot-msg note" id="shot-msg">복사하는 중…</p>
+    <div class="modal-bd"><img class="shot-prev" id="shot-img" alt="세팅 이미지" style="min-height:120px;background:var(--sunk)">
+      <p class="shot-msg note" id="shot-msg">이미지를 만드는 중…</p>
       <div class="btnrow" style="margin-top:10px"><button class="btn p" id="shot-copy">다시 복사</button>
         <button class="btn" id="shot-share">공유하기</button><button class="btn" id="shot-save">저장</button></div></div></div></div>`;
   $('#mo-x').onclick = closeModal; bindBackdrop();
+  blobP.then(b => { const im = $('#shot-img'); if (im) im.src = URL.createObjectURL(b); },
+             () => { const m = $('#shot-msg'); if (m) m.textContent = '이미지를 만들지 못했습니다.'; });
   const fileOf = blob => new File([blob], `몬나세팅_${new Date().toISOString().slice(0, 10)}.png`, { type: 'image/png' });
   copied.then(ok => {
+    if (!$('#shot-msg')) return;
     $('#shot-msg').innerHTML = ok ? '<b style="color:var(--good)">클립보드에 복사했습니다</b> — 카톡 대화창에 붙여넣기(Ctrl+V) 하세요.'
       : (canClip ? '이 브라우저가 이미지 복사를 막았습니다 — <b>공유하기</b>나 <b>저장</b>을 쓰세요.'
                  : '이 환경에서는 이미지 복사가 안 됩니다 (파일로 직접 열었거나 지원하지 않는 브라우저) — <b>공유하기</b>나 <b>저장</b>을 쓰세요.');
@@ -3076,7 +3097,7 @@ function shotCopy() {
   });
   $('#shot-copy').onclick = () => {
     if (!canClip) { toast('이 환경에서는 복사가 안 됩니다'); return; }
-    navigator.clipboard.write([new ClipboardItem({ 'image/png': new Promise(res => cv.toBlob(res, 'image/png')) })])
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })])
       .then(() => { toast('이미지를 복사했습니다'); $('#shot-msg').innerHTML = '<b style="color:var(--good)">클립보드에 복사했습니다</b>'; }, () => toast('복사하지 못했습니다'));
   };
   $('#shot-share').onclick = async () => {
