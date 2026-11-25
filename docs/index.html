@@ -176,6 +176,10 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
 .res details>summary{margin-top:6px}
 .res-acts{display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-top:16px}
 .res-acts .btn{min-height:46px;font-size:14.5px;border-radius:13px}
+.res-shot{width:100%;margin-top:8px;min-height:44px;gap:6px;border-radius:13px;background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent);font-weight:700}
+.res-shot .mini{color:var(--dim2);font-weight:500}
+.shot-prev{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+.shot-msg{margin:10px 0 0;font-size:13px}
 .res-tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
 .res-tools .btn{flex-direction:column;gap:3px;min-height:56px;font-size:11.5px;padding:6px 4px;background:var(--sunk);border-color:var(--line);border-radius:12px}
 .res-tools .btn:hover{background:var(--panel2)}
@@ -648,6 +652,7 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent;h
   <symbol id="i-map" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M16 4v6M10 14v6"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
   <symbol id="i-out" viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
   <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></symbol>
@@ -756,6 +761,7 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent;h
           <button class="btn p" id="btn-save">세팅 저장</button>
           <button class="btn" id="btn-over">덮어쓰기</button>
         </div>
+        <button class="btn res-shot" id="btn-shot"><svg class="ico-svg" aria-hidden="true"><use href="#i-cam"/></svg>이미지로 복사 <span class="mini">카톡 공유용</span></button>
         <div class="res-tools">
           <button class="btn" id="btn-share"><svg class="ico-svg" aria-hidden="true"><use href="#i-link"/></svg>링크</button>
           <button class="btn" id="btn-export"><svg class="ico-svg" aria-hidden="true"><use href="#i-out"/></svg>내보내기</button>
@@ -2945,6 +2951,156 @@ function initTip() {
 }
 
 /* =========================================================
+   세팅 이미지 — 무기 · 방어구(몬스터 이름) · 스킬 · 표류석 · 기댓값을 한 장으로 그려 클립보드에 복사 (카톡 공유용)
+   외부 그림(공식 아이콘)은 캔버스를 오염시켜 복사가 막히므로 글자만 그린다.
+   ========================================================= */
+const SHOT_FONT = '"Pretendard Variable","Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif';
+const SHOT_C = { bg: '#0b0e13', panel: '#141922', line: '#262f3c', txt: '#eceff4', dim: '#8e99aa', dim2: '#6b7586',
+  accent: '#f2a93b', good: '#6fcf7e', bad: '#ee6a5e', chip: '#1c2330', chipOn: '#183022', stone: '#2a2140' };
+const monOf = x => (x && MONS[x.mon]?.name) || (x ? x.series.replace(/ 세트$/, '') : '');
+function shotData() {
+  const ws = weaponStats(), agg = aggregate(), r = ws ? calc(ws, agg) : null;
+  const b = curBuild();
+  const d = { title: b ? b.name : '내 세팅', date: new Date().toLocaleDateString('ko-KR'), r, ws, agg };
+  if (ws) {
+    const w = ws.w, st = styleBonus(S.style, w.id), prof = styleProfile(w.id);
+    const eleName = (META.elementNames[ws.elem] || '').replace('속성', '');
+    d.weapon = {
+      mon: monOf(w), name: ws.name, cat: w.catName, gr: `G${ws.g.gr} Lv${S.w.lv}`,
+      stat: [`공 ${fmt(ws.atk + st.atk)}`, ws.ele || st.ele ? `${eleName || '속성'} ${fmt(ws.ele + st.ele)}` : null,
+             `회심 ${Math.round((ws.crit + st.crit) * 100)}%`].filter(Boolean).join(' · '),
+      style: prof && S.style.lv ? `스타일 Lv${S.style.lv}` : (st.atk || st.ele || st.crit ? '스타일 직접 입력' : ''),
+      sk: [...ws.sk.map(([k, l]) => `${skName(k)} ${l}`),
+           ...styleSkills(w, ws.g.gr, S.style.lv).filter(x => x.on).map(x => `${skName(x.k)} ${x.l}`)],
+    };
+  }
+  d.armor = PARTS.map(p => {
+    const a = A_BY_ID[S.a[p].id]; if (!a) return { part: PARTNAME[p], none: true };
+    const g = a.g.find(x => x.gr === S.a[p].gr) || a.g[a.g.length - 1];
+    return { part: PARTNAME[p], mon: monOf(a), name: a.name !== monOf(a) ? a.name : '', gr: `G${g.gr}`,
+      sk: g.sk.map(([k, l]) => `${skName(k)} ${l}`),
+      stones: (S.a[p].stones || []).filter(Boolean).map(x => `${(x.color || '').replace('색', '')} ${skName(x.kind)}${x.lv > 1 ? ' ' + x.lv : ''}`) };
+  });
+  const blocked = new Set((r?.blocked || []).map(x => x.kind));
+  d.skills = Object.entries(agg.capped).sort((a, b) => (SKILLS[a[0]]?.sort ?? 0) - (SKILLS[b[0]]?.sort ?? 0))
+    .map(([k, lv]) => ({ t: `${skName(k)} ${agg.raw[k] > lv ? lv + '(' + agg.raw[k] + ')' : lv}`, on: !!cfgOf(k)?.g && !blocked.has(k), off: blocked.has(k) }))
+    .sort((a, b) => b.on - a.on);
+  if (ws) { const a = ailmentChance(ws.elem, agg.capped); if (a) d.ail = `${(META.elementNames[ws.elem] || '').replace('속성', '')} 축적 ${(a.normal * 100).toFixed(1)}%${a.sneak ? ` · 뒤에서 ${(a.back * 100).toFixed(1)}%` : ''}`; }
+  return d;
+}
+function shotCanvas() {
+  const d = shotData(), W = 720, P = 28, SC = 2;
+  const draw = (ctx, real) => {
+    let y = P;
+    const font = (sz, wt = 500) => { ctx.font = `${wt} ${sz}px ${SHOT_FONT}`; };
+    const text = (t, x, yy, c, sz, wt, align = 'left') => { font(sz, wt); ctx.fillStyle = c; ctx.textAlign = align; if (real) ctx.fillText(t, x, yy); ctx.textAlign = 'left'; return ctx.measureText(t).width; };
+    const fit = (t, maxW, sz, wt) => { font(sz, wt); if (ctx.measureText(t).width <= maxW) return t; while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1); return t + '…'; };
+    const rect = (x, yy, w, h, c, r = 8) => { if (!real) return; ctx.fillStyle = c; ctx.beginPath(); ctx.roundRect(x, yy, w, h, r); ctx.fill(); };
+    // 칩 줄바꿈 배치
+    const chips = (items, x0, yy, maxW, sz = 13) => {
+      let x = x0, row = yy; const h = sz + 12;
+      for (const it of items) {
+        font(sz, it.b ? 700 : 500); const w = ctx.measureText(it.t).width + 16;
+        if (x + w > x0 + maxW && x > x0) { x = x0; row += h + 6; }
+        rect(x, row, w, h, it.bg || SHOT_C.chip, 7); text(it.t, x + 8, row + sz + 3, it.c || SHOT_C.txt, sz, it.b ? 700 : 500);
+        x += w + 6;
+      }
+      return items.length ? row + h : yy;
+    };
+    rect(0, 0, W, 99999, SHOT_C.bg, 0);
+    // 머리말
+    text('몬헌 나우 장비 세팅', P, y + 13, SHOT_C.dim, 13, 600); text(d.date, W - P, y + 13, SHOT_C.dim2, 13, 500, 'right'); y += 24;
+    text(fit(d.title, W - 2 * P, 24, 800), P, y + 24, SHOT_C.txt, 24, 800); y += 40;
+    // 기댓값
+    rect(P, y, W - 2 * P, d.r ? 86 + (d.ail ? 22 : 0) : 50, SHOT_C.panel, 12);
+    if (d.r) {
+      text('기댓값 공격력', P + 18, y + 26, SHOT_C.dim, 13, 600);
+      text(fmt(d.r.finalDmg, 1), P + 18, y + 66, SHOT_C.accent, 38, 800);
+      const sub = [`총공 ${fmt(d.r.totalAtk, 1)}`, d.r.totalEle ? `총속 ${fmt(d.r.totalEle, 1)}` : null,
+        `회심 ${(d.r.critTotal * 100).toFixed(1)}%`, S.motion ? `모션 ${S.motion}% → ${fmt(d.r.motionDmg, 1)}` : null].filter(Boolean).join('   ');
+      text(sub, W - P - 18, y + 66, SHOT_C.txt, 14, 600, 'right');
+      if (d.ail) text(d.ail, W - P - 18, y + 88, SHOT_C.dim, 13, 500, 'right');
+      y += 86 + (d.ail ? 22 : 0) + 16;
+    } else { text('무기를 선택하지 않았습니다', P + 18, y + 31, SHOT_C.dim, 14, 600); y += 66; }
+    const head = t => { text(t, P, y + 14, SHOT_C.accent, 14, 800); y += 24; };
+    // 무기
+    head('무기');
+    if (d.weapon) {
+      const wd = d.weapon; let x = P;
+      x += text(wd.mon, x, y + 19, SHOT_C.txt, 18, 800) + 10;
+      text(fit(`${wd.name} · ${wd.cat}`, W - P - x, 15, 500), x, y + 19, SHOT_C.dim, 15, 500); y += 30;
+      text([wd.gr, wd.stat, wd.style].filter(Boolean).join('  ·  '), P, y + 15, SHOT_C.txt, 14, 600); y += 26;
+      if (wd.sk.length) y = chips(wd.sk.map(t => ({ t })), P, y, W - 2 * P) + 6;
+    } else { text('—', P, y + 16, SHOT_C.dim2, 14); y += 24; }
+    y += 10;
+    // 방어구
+    head('방어구');
+    for (const a of d.armor) {
+      if (real) { ctx.strokeStyle = SHOT_C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(P, y + 0.5); ctx.lineTo(W - P, y + 0.5); ctx.stroke(); }
+      y += 10;
+      text(a.part, P, y + 17, SHOT_C.dim, 13, 700);
+      if (a.none) { text('—', P + 46, y + 17, SHOT_C.dim2, 15); y += 30; continue; }
+      let x = P + 46;
+      x += text(a.mon, x, y + 17, SHOT_C.txt, 16, 800) + 8;
+      text(fit([a.name, a.gr].filter(Boolean).join(' · '), W - P - x, 13, 500), x, y + 17, SHOT_C.dim2, 13, 500);
+      y += 26;
+      const items = [...a.sk.map(t => ({ t })), ...a.stones.map(t => ({ t: '◆ ' + t, bg: SHOT_C.stone, c: '#d6c4ff' }))];
+      y = (items.length ? chips(items, P + 46, y, W - 2 * P - 46, 12.5) : y) + 8;
+    }
+    y += 6;
+    // 집계 스킬
+    head('발동 스킬');
+    y = chips(d.skills.map(s => ({ t: s.t + (s.off ? ' (미발동)' : ''), bg: s.on ? SHOT_C.chipOn : SHOT_C.chip, c: s.on ? SHOT_C.good : (s.off ? SHOT_C.dim2 : SHOT_C.dim), b: s.on })), P, y, W - 2 * P) + 14;
+    text('초록 = 딜 반영 스킬 · ◆ = 표류석', P, y + 12, SHOT_C.dim2, 11.5, 500);
+    text('kimjwakpc.github.io/mhnow', W - P, y + 12, SHOT_C.dim2, 11.5, 500, 'right');
+    return y + 12 + P;
+  };
+  const m = document.createElement('canvas').getContext('2d');
+  const H = Math.ceil(draw(m, false));
+  const cv = document.createElement('canvas'); cv.width = W * SC; cv.height = H * SC;
+  const ctx = cv.getContext('2d'); ctx.scale(SC, SC); draw(ctx, true);
+  return cv;
+}
+// 버튼 → 바로 클립보드에 복사 (사파리는 사용자 동작 안에서 ClipboardItem 을 만들어야 해서 Promise 로 넘긴다) + 미리보기 창
+function shotCopy() {
+  let cv; try { cv = shotCanvas(); } catch (e) { toast('이미지를 만들지 못했습니다'); return; }
+  const blobP = new Promise(res => cv.toBlob(res, 'image/png'));
+  const canClip = !!(navigator.clipboard?.write && window.ClipboardItem && window.isSecureContext);
+  const copied = canClip
+    ? navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(() => true, () => false)
+    : Promise.resolve(false);
+  document.body.style.overflow = 'hidden';
+  $('#modal-root').innerHTML = `<div class="modal" id="mo"><div class="modal-in" style="max-width:560px">
+    <div class="modal-hd"><h3>세팅 이미지</h3><button class="btn gh" style="margin-left:auto" id="mo-x">✕ 닫기</button></div>
+    <div class="modal-bd"><img class="shot-prev" src="${cv.toDataURL('image/png')}" alt="세팅 이미지">
+      <p class="shot-msg note" id="shot-msg">복사하는 중…</p>
+      <div class="btnrow" style="margin-top:10px"><button class="btn p" id="shot-copy">다시 복사</button>
+        <button class="btn" id="shot-share">공유하기</button><button class="btn" id="shot-save">저장</button></div></div></div></div>`;
+  $('#mo-x').onclick = closeModal; bindBackdrop();
+  const fileOf = blob => new File([blob], `몬나세팅_${new Date().toISOString().slice(0, 10)}.png`, { type: 'image/png' });
+  copied.then(ok => {
+    $('#shot-msg').innerHTML = ok ? '<b style="color:var(--good)">클립보드에 복사했습니다</b> — 카톡 대화창에 붙여넣기(Ctrl+V) 하세요.'
+      : (canClip ? '이 브라우저가 이미지 복사를 막았습니다 — <b>공유하기</b>나 <b>저장</b>을 쓰세요.'
+                 : '이 환경에서는 이미지 복사가 안 됩니다 (파일로 직접 열었거나 지원하지 않는 브라우저) — <b>공유하기</b>나 <b>저장</b>을 쓰세요.');
+    if (ok) toast('이미지를 복사했습니다');
+  });
+  $('#shot-copy').onclick = () => {
+    if (!canClip) { toast('이 환경에서는 복사가 안 됩니다'); return; }
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': new Promise(res => cv.toBlob(res, 'image/png')) })])
+      .then(() => { toast('이미지를 복사했습니다'); $('#shot-msg').innerHTML = '<b style="color:var(--good)">클립보드에 복사했습니다</b>'; }, () => toast('복사하지 못했습니다'));
+  };
+  $('#shot-share').onclick = async () => {
+    const f = fileOf(await blobP);
+    if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: '몬헌 나우 세팅' }); } catch (e) { } }
+    else toast('이 브라우저는 공유를 지원하지 않습니다 — 저장을 쓰세요');
+  };
+  $('#shot-save').onclick = async () => {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await blobP); a.download = fileOf(new Blob()).name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+}
+
+/* =========================================================
    부팅
    ========================================================= */
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
@@ -3027,6 +3183,7 @@ function boot() {
     } catch (err) { toast('파일을 읽지 못했습니다'); } };
     rd.readAsText(f); e.target.value = '';
   };
+  $('#btn-shot').onclick = shotCopy;
   $('#btn-share').onclick = () => {
     const u = location.origin + location.pathname + '#b=' + enc();
     navigator.clipboard?.writeText(u).then(() => toast('링크를 복사했습니다'), () => prompt('복사하세요', u));
